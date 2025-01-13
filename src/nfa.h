@@ -16,6 +16,8 @@ struct NFA {
     set<int>** transitionTable;
     set<int> acceptedStates;
     unordered_map<int, void*(*)()> actions;
+
+    ~NFA();
 };
 
 NFA* nfa_new_single_char(char);

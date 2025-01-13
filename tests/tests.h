@@ -30,12 +30,13 @@ struct Test {
     int testsFailed = 0; \
     for (int i = 0; i < tests.size(); i++) { \
         bool pass = tests[i]->action(); \
+        cout << "TEST " << i + 1 << ": "; \
         if (pass) { \
-            cout << tests[i]->name << ": Passed" << endl; \
+            cout << tests[i]->name << " Passed" << endl; \
             testsPassed++; \
         } \
         else { \
-            cout << tests[i]->name << ": Failed" << endl; \
+            cout << tests[i]->name << " Failed" << endl; \
             testsFailed++; \
         } \
         delete tests[i]; \
