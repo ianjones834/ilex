@@ -11,6 +11,4 @@ using namespace std;
 
 NFA* regex_parse(string);
 
-NFA* regex_singleton(char);
-
 #endif //REGEX_H

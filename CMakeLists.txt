@@ -22,5 +22,13 @@ add_executable(nfa-tests tests/nfa-tests.cpp
         src/nfa.h
         src/nfa.cpp
 )
-add_executable(test-tests tests/test-tests.cpp
-        tests/tests.h)
+
+add_executable(regex-tests tests/regex-tests.cpp
+        tests/tests.h
+        tests/utils.cpp
+        tests/utils.h
+        src/nfa.h
+        src/nfa.cpp
+        src/regex.h
+        src/regex.cpp
+)

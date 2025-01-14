@@ -28,7 +28,7 @@ NFA* nfa_concat(NFA*, NFA*);
 
 NFA* nfa_optional(NFA*);
 
-NFA* nfa_zero_or_more(NFA*);
+NFA* nfa_zero_or_more(const NFA*, const bool oneOrMore = false);
 
 NFA* nfa_one_or_more(NFA*);
 

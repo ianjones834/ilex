@@ -149,8 +149,6 @@ int main() {
 
         delete nfaUnion;
         delete nfa;
-        delete nfa1;
-        delete nfa2;
 
         return res;
     })
@@ -192,11 +190,204 @@ int main() {
 
         delete nfaUnion;
         delete nfa;
-        delete nfa1;
-        delete nfa2;
 
         return res;
     })
+
+    TEST("NFA Concat (aa)", []()-> bool {
+        NFA* nfa1 = nfa_new_single_char('a');
+        NFA* nfa2 = nfa_new_single_char('a');
+
+        NFA* nfaConcatRes = nfa_concat(nfa1, nfa2);
+
+        NFA* nfa = new NFA;
+
+        nfa->startState = 0;
+
+        nfa->alphabet = set<int>{'a'};
+        nfa->alphabet.insert('a');
+
+        nfa->states = set<int>{0};
+        nfa->states.insert(1);
+        nfa->states.insert(2);
+        nfa->states.insert(3);
+
+        nfa->acceptedStates.insert(3);
+
+        nfa->transitionTable = new set<int>*[4];
+
+        for (int i = 0; i < 4; i++) {
+            nfa->transitionTable[i] = new set<int>[128];
+        }
+
+        nfa->transitionTable[0]['a'] = set<int>{1};
+        nfa->transitionTable[1][0] = set<int>{2};
+        nfa->transitionTable[2]['a'] = set<int>{3};
+
+        bool res = ASSERT_EQUALS(*nfaConcatRes, *nfa);
+
+        if (!res) cout << *nfaConcatRes << *nfa;
+
+        delete nfaConcatRes;
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("NFA Concat (ab)", []()-> bool {
+    NFA* nfa1 = nfa_new_single_char('a');
+    NFA* nfa2 = nfa_new_single_char('b');
+
+    NFA* nfaConcatRes = nfa_concat(nfa1, nfa2);
+
+    NFA* nfa = new NFA;
+
+    nfa->startState = 0;
+
+    nfa->alphabet = set<int>{'a'};
+    nfa->alphabet.insert('b');
+
+    nfa->states = set<int>{0};
+    nfa->states.insert(1);
+    nfa->states.insert(2);
+    nfa->states.insert(3);
+
+    nfa->acceptedStates.insert(3);
+
+    nfa->transitionTable = new set<int>*[4];
+
+    for (int i = 0; i < 4; i++) {
+        nfa->transitionTable[i] = new set<int>[128];
+    }
+
+    nfa->transitionTable[0]['a'] = set<int>{1};
+    nfa->transitionTable[1][0] = set<int>{2};
+    nfa->transitionTable[2]['b'] = set<int>{3};
+
+    bool res = ASSERT_EQUALS(*nfaConcatRes, *nfa);
+
+    if (!res) cout << *nfaConcatRes << *nfa;
+
+    delete nfaConcatRes;
+    delete nfa;
+
+    return res;
+})
+
+    TEST("NFA Zero Or More (a*)", []() -> bool {
+        NFA* nfa1 = nfa_new_single_char('a');
+        NFA* nfaZeroOrMore = nfa_zero_or_more(nfa1);
+
+        NFA* nfa = new NFA;
+
+        nfa->startState = 0;
+
+        nfa->acceptedStates =  set<int>{0};
+        nfa->acceptedStates.insert(2);
+
+        nfa->alphabet = set<int>{'a'};
+
+        nfa->states = set<int>{0};
+        nfa->states.insert(1);
+        nfa->states.insert(2);
+
+        nfa->transitionTable = new set<int>*[3];
+
+        nfa->transitionTable[0] = new set<int>[128];
+        nfa->transitionTable[1] = new set<int>[128];
+        nfa->transitionTable[2] = new set<int>[128];
+
+        nfa->transitionTable[0][0].insert(1);
+        nfa->transitionTable[1]['a'].insert(2);
+        nfa->transitionTable[2][0].insert(0);
+
+        bool res = ASSERT_EQUALS(*nfaZeroOrMore, *nfa);
+        if (!res) cout << *nfaZeroOrMore << *nfa;
+
+        delete nfaZeroOrMore;
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("NFA Zero Or More (b*)", []() -> bool {
+    NFA* nfa1 = nfa_new_single_char('b');
+    NFA* nfaZeroOrMore = nfa_zero_or_more(nfa1);
+
+    NFA* nfa = new NFA;
+
+    nfa->startState = 0;
+
+    nfa->acceptedStates =  set<int>{0};
+    nfa->acceptedStates.insert(2);
+
+    nfa->alphabet = set<int>{'b'};
+
+    nfa->states = set<int>{0};
+    nfa->states.insert(1);
+    nfa->states.insert(2);
+
+    nfa->transitionTable = new set<int>*[3];
+
+    nfa->transitionTable[0] = new set<int>[128];
+    nfa->transitionTable[1] = new set<int>[128];
+    nfa->transitionTable[2] = new set<int>[128];
+
+    nfa->transitionTable[0][0].insert(1);
+    nfa->transitionTable[1]['b'].insert(2);
+    nfa->transitionTable[2][0].insert(0);
+
+    bool res = ASSERT_EQUALS(*nfaZeroOrMore, *nfa);
+    if (!res) cout << *nfaZeroOrMore << *nfa;
+
+    delete nfaZeroOrMore;
+    delete nfa;
+
+    return res;
+})
+
+    TEST("NFA One or More (a+)", []() -> bool {
+        NFA* nfaOneOrMore = nfa_one_or_more(nfa_new_single_char('a'));
+        NFA* nfa = new NFA;
+
+        nfa->startState = 0;
+
+        nfa->alphabet = set<int>{'a'};
+
+        nfa->states.insert(0);
+        nfa->states.insert(1);
+        nfa->states.insert(2);
+        nfa->states.insert(3);
+        nfa->states.insert(4);
+
+        nfa->acceptedStates.insert(2);
+        nfa->acceptedStates.insert(4);
+
+        nfa->transitionTable = new set<int>*[5];
+
+        for (int i = 0; i < 5; i++) {
+            nfa->transitionTable[i] = new set<int>[128];
+        }
+
+        nfa->transitionTable[0]['a'] = set<int>{1};
+        nfa->transitionTable[1][0] = set<int>{2};
+        nfa->transitionTable[2][0] = set<int>{3};
+        nfa->transitionTable[3]['a'] = set<int>{4};
+        nfa->transitionTable[4][0] = set<int>{2};
+
+        bool res = ASSERT_EQUALS(*nfaOneOrMore, *nfa);
+
+        if (!res) cout << *nfaOneOrMore << *nfa;
+
+        delete nfaOneOrMore;
+        delete nfa;
+
+        return res;
+    })
+    //
+    // TEST("NFA Optional (a?)", []() -> bool {
+    //
+    // })
 
     START_TESTS()
   }
