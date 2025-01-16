@@ -384,10 +384,177 @@ int main() {
 
         return res;
     })
-    //
-    // TEST("NFA Optional (a?)", []() -> bool {
-    //
-    // })
+
+    TEST("NFA Optional (a?)", []() -> bool {
+        NFA *nfaOptional = nfa_optional(nfa_new_single_char('a'));
+
+        NFA* nfa = new NFA;
+
+        nfa->startState = 0;
+
+        nfa->states.insert(0);
+        nfa->states.insert(1);
+
+        nfa->alphabet.insert('a');
+
+        nfa->transitionTable = new set<int>*[2];
+        nfa->transitionTable[0] = new set<int>[128];
+        nfa->transitionTable[0]['a'].insert(1);
+        nfa->transitionTable[1] = new set<int>[128];
+
+        nfa->acceptedStates.insert(0);
+        nfa->acceptedStates.insert(1);
+
+        bool res = ASSERT_EQUALS(*nfaOptional, *nfa);
+
+        if (!res) cout << *nfaOptional << *nfa;
+
+        delete nfaOptional;
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("Epsilon Closure of a state (a*, 0)", []() -> bool {
+        NFA* nfa = nfa_zero_or_more(nfa_new_single_char('a'));
+
+        set<int> epsilonClosureSet = epsilon_closure(nfa, 0);
+        set<int> expected;
+        expected.insert(0);
+        expected.insert(1);
+
+        bool res = ASSERT_EQUALS(epsilonClosureSet, expected);
+
+        if (!res) cout << epsilonClosureSet << expected;
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("Epsilon Closure of a state (a*, 2)", []() -> bool {
+        NFA* nfa = nfa_zero_or_more(nfa_new_single_char('a'));
+
+        set<int> epsilonClosureSet = epsilon_closure(nfa, 2);
+        set<int> expected;
+        expected.insert(0);
+        expected.insert(1);
+        expected.insert(2);
+
+        bool res = ASSERT_EQUALS(epsilonClosureSet, expected);
+
+        if (!res) cout << epsilonClosureSet << expected;
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("Epsilon Closure of a state ((a|b)*, 0)", []() -> bool {
+        NFA* nfa = nfa_zero_or_more(nfa_union(nfa_new_single_char('a'), nfa_new_single_char('b')));
+
+        set<int> epsilonClosureSet = epsilon_closure(nfa, 0);
+        set<int> expected;
+        expected.insert(0);
+        expected.insert(1);
+        expected.insert(2);
+        expected.insert(4);
+
+        bool res = ASSERT_EQUALS(epsilonClosureSet, expected);
+
+        if (!res) cout << epsilonClosureSet << expected;
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("Epsilon Closure of a state (a(a|b)*, 1)", []() -> bool {
+        NFA* nfa = nfa_concat(nfa_new_single_char('a'), nfa_zero_or_more(nfa_union(nfa_new_single_char('a'), nfa_new_single_char('b'))));
+
+        set<int> epsilonClosureSet = epsilon_closure(nfa, 1);
+        set<int> expected;
+        expected.insert(1);
+        expected.insert(2);
+        expected.insert(3);
+        expected.insert(4);
+        expected.insert(6);
+
+        bool res = ASSERT_EQUALS(epsilonClosureSet, expected);
+
+        if (!res) cout << epsilonClosureSet << expected;
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("Epsilon Closure of a set (a*, {0,2})", []() -> bool {
+        NFA* nfa = nfa_zero_or_more(nfa_new_single_char('a'));
+
+        set<int> T;
+        T.insert(0);
+        T.insert(2);
+
+        set<int> epsilonClosure = epsilon_closure(nfa, T);
+        set<int> expected;
+        expected.insert(0);
+        expected.insert(2);
+        expected.insert(1);
+
+        bool res = ASSERT_EQUALS(epsilonClosure, expected);
+
+        if (!res) cout << epsilonClosure << endl << expected << endl << endl;
+
+        return res;
+    })
+
+    TEST("Epsilon Closure of a set (a(a|b)*, {5,7})", []() -> bool {
+        NFA* nfa = nfa_concat(nfa_new_single_char('a'), nfa_zero_or_more(nfa_union(nfa_new_single_char('a'), nfa_new_single_char('b'))));
+
+        set<int> t;
+        t.insert(5);
+        t.insert(7);
+
+        set<int> epsilonClosureSet = epsilon_closure(nfa, t);
+        set<int> expected;
+        expected.insert(2);
+        expected.insert(3);
+        expected.insert(4);
+        expected.insert(6);
+        expected.insert(5);
+        expected.insert(7);
+
+        bool res = ASSERT_EQUALS(epsilonClosureSet, expected);
+
+        if (!res) cout << epsilonClosureSet << expected;
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("Move ((a|a), {1,3}, a", []() -> bool {
+        NFA* nfa = nfa_union(nfa_new_single_char('a'), nfa_new_single_char('a'));
+
+        set<int> t;
+        t.insert(1);
+        t.insert(3);
+
+        set<int> moveSet = move(nfa, t, 'a');
+        set<int> expected;
+        expected.insert(2);
+        expected.insert(4);
+
+        bool res = ASSERT_EQUALS(moveSet, expected);
+
+        if (!res) cout << moveSet << expected;
+
+        delete nfa;
+
+        return res;
+
+    })
 
     START_TESTS()
   }

@@ -7,18 +7,11 @@
 
 #include "../src/nfa.h"
 #include "../src/dfa.h"
-#include<set>
+#include<string>
 #include <iostream>
 using namespace std;
 
-ostream& operator<<(ostream&, set<int>&);
-
-ostream& operator<<(ostream&, NFA&);
-
-ostream& operator<<(ostream&, DFA&);
-
-bool operator==(NFA&, NFA&);
-
-bool operator==(DFA&, DFA&);
+bool simulate_nfa(NFA*, string);
+bool simulate_dfa(DFA*, string);
 
 #endif //UTILS_H

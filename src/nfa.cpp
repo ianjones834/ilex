@@ -3,32 +3,21 @@
 //
 
 #include "nfa.h"
-#include <algorithm>
-#include <iterator>
-
-NFA::~NFA() {
-    for (const int i : states) {
-        delete[] transitionTable[i];
-    }
-
-    delete[] transitionTable;
-}
+#include "../tests/utils.h"
+#include <stack>
 
 
 NFA* nfa_new_single_char(const char ch) {
     NFA* nfa = new NFA;
 
-    nfa->states = set<int>{0,1};
-    nfa->alphabet = set<int>{ch};
-    nfa->startState = 0;
-    nfa->transitionTable = new set<int>*[2];
+    auto* start = new State;
+    auto* end = new State;
 
-    for (int i = 0; i < 2; i++) {
-        nfa->transitionTable[i] = new set<int>[128];
-    }
+    end->acceptingState = true;
+    start->transitions.emplace(ch, set<State*>{end});
 
-    nfa->transitionTable[0][ch] = set<int>{1};
-    nfa->acceptedStates = set<int>{1};
+    nfa->states.insert(start);
+    nfa->states.insert(end);
 
     return nfa;
 }
@@ -36,66 +25,13 @@ NFA* nfa_new_single_char(const char ch) {
 NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
     NFA* nfa = new NFA;
 
-    nfa->startState = 0;
-    nfa->states = set<int>{0};
+    nfa->start = new State;
+    nfa->states.insert(nfa->start);
 
-    for (const char ch : nfa1->alphabet) {
-        nfa->alphabet.insert(ch);
-    }
+    nfa->start->transitions.emplace(0, set<State*>{nfa1->start, nfa2->start});
 
-    for (const char ch : nfa2->alphabet) {
-        nfa->alphabet.insert(ch);
-    }
-
-    const int transitionTableStateCount = 1 + nfa1->states.size() + nfa2->states.size();
-
-    nfa->transitionTable = new set<int>*[transitionTableStateCount];
-
-    for (int i = 0; i < transitionTableStateCount; i++) {
-        nfa->transitionTable[i] = new set<int>[128];
-    }
-
-    const int n = nfa1->states.size();
-
-    nfa->transitionTable[0][0] = set<int>{nfa1->startState + 1, nfa2->startState + 1 + n};
-
-    for (const int i : nfa1->states) {
-        nfa->states.insert(i + 1);
-
-        nfa->transitionTable[i + 1][0] = nfa1->transitionTable[i][0];
-
-        for (const char j : nfa1->alphabet) {
-            for (const int k : nfa1->transitionTable[i][j]) {
-                nfa1->transitionTable[i][j].erase(k);
-                nfa1->transitionTable[i][j].insert(k + 1);
-            }
-
-            nfa->transitionTable[i + 1][j] = nfa1->transitionTable[i][j];
-        }
-    }
-
-    for (const int i : nfa2->states) {
-        nfa->states.insert(i + 1 + nfa1->states.size());
-
-        nfa->transitionTable[i + 1 + nfa1->states.size()][0] = nfa2->transitionTable[i][0];
-
-        for (const char j : nfa2->alphabet) {
-            for (const int k : nfa2->transitionTable[i][j]) {
-                nfa2->transitionTable[i][j].erase(k);
-                nfa2->transitionTable[i][j].insert(k + 1 + nfa1->states.size());
-            }
-
-            nfa->transitionTable[i + 1 + nfa1->states.size()][j] = nfa2->transitionTable[i][j];
-        }
-    }
-
-    for (const int i : nfa1->acceptedStates) {
-        nfa->acceptedStates.insert(i + 1);
-    }
-
-    for (const int i : nfa2->acceptedStates) {
-        nfa->acceptedStates.insert(i + 1 + nfa1->states.size());
-    }
+    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
+    nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
 
     delete nfa1;
     delete nfa2;
@@ -106,55 +42,23 @@ NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
 NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
     NFA* nfa = new NFA;
 
-    nfa->startState = nfa1->startState;
+    nfa->start = nfa1->start;
 
-    for (int i : nfa1->alphabet) {
-        nfa->alphabet.insert(i);
-    }
+    for (State* state : nfa1->states) {
+        if (state->acceptingState == true) {
+            state->acceptingState = false;
 
-    for (int i : nfa2->alphabet) {
-        nfa->alphabet.insert(i);
-    }
-
-
-
-    const int nfa1StateSize = nfa1->states.size();
-    const int nfa2StateSize = nfa2->states.size();
-
-    for (int i : nfa2->acceptedStates) {
-        nfa->acceptedStates.insert(i + nfa1StateSize);
-    }
-
-    nfa->transitionTable = new set<int>*[nfa1StateSize + nfa2StateSize];
-
-    for (int i = 0; i < nfa1StateSize + nfa2StateSize; i++) {
-        nfa->transitionTable[i] = new set<int>[128];
-    }
-
-    for (int i : nfa1->states) {
-        nfa->states.insert(i);
-
-        for (int j : nfa1->alphabet) {
-            nfa->transitionTable[i][j] = nfa1->transitionTable[i][j];
-        }
-    }
-
-    for (int i : nfa1->acceptedStates) {
-        nfa->transitionTable[i][0].insert(nfa2->startState + nfa1StateSize);
-    }
-
-    for (int i : nfa2->states) {
-        nfa->states.insert(i + nfa1StateSize);
-
-        for (int j  : nfa2->alphabet) {
-            for (int k : nfa2->transitionTable[i][j]) {
-                nfa2->transitionTable[i][j].erase(k);
-                nfa2->transitionTable[i][j].insert(k + nfa1StateSize);
+            if (state->transitions.contains(0)) {
+                state->transitions.emplace(0, set<State*>{nfa2->start});
             }
-
-            nfa->transitionTable[i + nfa1StateSize][j] = nfa2->transitionTable[i][j];
+            else {
+                state->transitions[0].insert(nfa2->start);
+            }
         }
     }
+
+    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
+    nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
 
     delete nfa1;
     delete nfa2;
@@ -165,43 +69,20 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
 NFA *nfa_zero_or_more(const NFA *nfa1, const bool oneOrMore) {
     NFA *nfa = new NFA;
 
-    nfa->startState = 0;
-    nfa->alphabet = nfa1->alphabet;
+    nfa->start = new State;
+    nfa->start->acceptingState = true;
+    nfa->start->transitions.emplace(0, set<State*>{nfa1->start});
 
-    nfa->states.insert(0);
-
-    nfa->acceptedStates.insert(0);
-
-    for (int i : nfa1->acceptedStates) {
-        nfa->acceptedStates.insert(i + 1);
-    }
-
-    int nfa1StateSize = nfa1->states.size();
-
-    nfa->transitionTable = new set<int>*[1 + nfa1StateSize];
-
-    for (int i = 0; i < 1 + nfa1StateSize; i++) {
-        nfa->transitionTable[i] = new set<int>[128];
-    }
-
-    for (int i : nfa1->states) {
-        nfa->states.insert(i + 1);
-
-        for (int j : nfa1->alphabet) {
-            for (int k : nfa1->transitionTable[i][j]) {
-                nfa1->transitionTable[i][j].erase(k);
-                nfa1->transitionTable[i][j].insert(k + 1);
+    for (State* state : nfa1->states) {
+        if (state->acceptingState == true) {
+            if (state->transitions.contains(0)) {
+                state->transitions[0].insert(nfa->start);
             }
-
-            nfa->transitionTable[i + 1][j] = nfa1->transitionTable[i][j];
-        }
-
-        if (nfa1->acceptedStates.contains(i)) {
-            nfa->transitionTable[i + 1][0].insert(0);
+            else {
+                state->transitions.emplace(0, set<State*>{nfa->start});
+            }
         }
     }
-
-    nfa->transitionTable[0][0].insert(nfa1->startState + 1);
 
     if (!oneOrMore) delete nfa1;
 
@@ -213,8 +94,73 @@ NFA *nfa_one_or_more(NFA *nfa1) {
 }
 
 NFA *nfa_optional(NFA *nfa1) {
-    nfa1->acceptedStates.insert(nfa1->startState);
+    nfa1->start->acceptingState = true;
     return nfa1;
+}
+
+
+set<State*> epsilon_closure(NFA* nfa, State* s) {
+    set<State*> res;
+    stack<State*> toSearch;
+
+    res.insert(s);
+    toSearch.push(s);
+
+    while (!toSearch.empty()) {
+        State* cur = toSearch.top();
+        toSearch.pop();
+
+        if (cur->transitions.contains(0)) {
+            for (State* state : cur->transitions[0]) {
+                if (!res.contains(state)) {
+                    res.insert(state);
+                    toSearch.push(state);
+                }
+            }
+        }
+    }
+
+    return res;
+}
+
+set<State*> epsilon_closure(NFA *nfa, const set<State*>& stateSet) {
+    set<State*> res;
+    stack<State*> toSearch;
+
+    for (State* i : stateSet) {
+        toSearch.push(i);
+        res.insert(i);
+    }
+
+    while (!toSearch.empty()) {
+        State* cur = toSearch.top();
+        toSearch.pop();
+
+        if (cur->transitions.contains(0)) {
+            for (State* state : cur->transitions[0]) {
+                if (!res.contains(state)) {
+                    res.insert(state);
+                    toSearch.push(state);
+                }
+            }
+        }
+    }
+
+    return res;
+}
+
+set<State*> move(NFA *nfa, const set<State*>& T, char ch) {
+    set<State*> res;
+
+    for (State* cur : T) {
+        if (cur->transitions.contains(ch)) {
+            for (State* state : cur->transitions[ch]) {
+                res.insert(state);
+            }
+        }
+    }
+
+    return res;
 }
 
 

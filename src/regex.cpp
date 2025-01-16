@@ -71,14 +71,17 @@ NFA* regex_parse(string str) {
                     switch (str[i + 1]) {
                         case '+': {
                             newNfa = nfa_one_or_more(newNfa);
+                            i++;
                             break;
                         }
                         case '*': {
                             newNfa = nfa_zero_or_more(newNfa);
+                            i++;
                             break;
                         }
                         case '?': {
                             newNfa = nfa_optional(newNfa);
+                            i++;
                             break;
                         }
                         default:;

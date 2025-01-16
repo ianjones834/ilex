@@ -5,17 +5,13 @@
 #ifndef NFA_H
 #define NFA_H
 
-#include<unordered_map>
 #include<set>
+#include "state.h"
 using namespace std;
 
 struct NFA {
-    int startState;
-    set<int> alphabet;
-    set<int> states;
-    set<int>** transitionTable;
-    set<int> acceptedStates;
-    unordered_map<int, void*(*)()> actions;
+    State* start;
+    set<State*> states;
 
     ~NFA();
 };
@@ -28,14 +24,14 @@ NFA* nfa_concat(NFA*, NFA*);
 
 NFA* nfa_optional(NFA*);
 
-NFA* nfa_zero_or_more(const NFA*, const bool oneOrMore = false);
+NFA* nfa_zero_or_more(const NFA*, bool oneOrMore = false);
 
 NFA* nfa_one_or_more(NFA*);
 
-set<int> epsilon_closure(int);
+set<State*> epsilon_closure(NFA*, State*);
 
-set<int> epsilon_closure(set<int>);
+set<State*> epsilon_closure(NFA*, set<State*>&);
 
-set<int> move(set<int>, char);
+set<State*> move(NFA*, set<State*>&, char);
 
 #endif //NFA_H

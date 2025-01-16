@@ -13,9 +13,8 @@ struct DFA {
     int startState;
     set<int> alphabet;
     set<int> states;
-    set<int>** transitionTable;
+    int** transitionTable;
     set<int> acceptedStates;
-    unordered_map<int, void*(*)()> actions;
 };
 
 bool dfa_serialize(DFA*);

@@ -13,7 +13,8 @@ add_executable(ilex main.cpp
         src/nfa.cpp
         src/nfa.h
         src/regex.cpp
-        src/regex.h)
+        src/regex.h
+        src/state.h)
 
 add_executable(nfa-tests tests/nfa-tests.cpp
         tests/tests.h
@@ -21,6 +22,7 @@ add_executable(nfa-tests tests/nfa-tests.cpp
         tests/utils.h
         src/nfa.h
         src/nfa.cpp
+        src/state.h
 )
 
 add_executable(regex-tests tests/regex-tests.cpp
@@ -31,4 +33,5 @@ add_executable(regex-tests tests/regex-tests.cpp
         src/nfa.cpp
         src/regex.h
         src/regex.cpp
+        src/state.h
 )
