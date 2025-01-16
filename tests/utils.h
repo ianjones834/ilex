@@ -11,6 +11,8 @@
 #include <iostream>
 using namespace std;
 
+ostream& operator<<(ostream&, const NFA&);
+
 bool simulate_nfa(NFA*, string);
 bool simulate_dfa(DFA*, string);
 

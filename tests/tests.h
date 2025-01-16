@@ -23,8 +23,6 @@ struct Test {
     test->action = (y); \
     tests.push_back(test);
 
-#define ASSERT_EQUALS(x,y) ((x) == (y))
-
 #define START_TESTS() \
     int testsPassed = 0; \
     int testsFailed = 0; \

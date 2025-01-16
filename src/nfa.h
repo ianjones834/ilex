@@ -5,16 +5,17 @@
 #ifndef NFA_H
 #define NFA_H
 
-#include<set>
+#include <unordered_set>
+
 #include "state.h"
 using namespace std;
 
 struct NFA {
     State* start;
-    set<State*> states;
-
-    ~NFA();
+    unordered_set<State*> states;
 };
+
+NFA* nfa_copy(NFA*);
 
 NFA* nfa_new_single_char(char);
 
@@ -28,10 +29,12 @@ NFA* nfa_zero_or_more(const NFA*, bool oneOrMore = false);
 
 NFA* nfa_one_or_more(NFA*);
 
-set<State*> epsilon_closure(NFA*, State*);
+NFA* nfa_range(char, char);
 
-set<State*> epsilon_closure(NFA*, set<State*>&);
+unordered_set<State*> epsilon_closure(NFA*, State*);
 
-set<State*> move(NFA*, set<State*>&, char);
+unordered_set<State*> epsilon_closure(NFA*, unordered_set<State*>);
+
+unordered_set<State*> move(NFA*, unordered_set<State*>, char);
 
 #endif //NFA_H

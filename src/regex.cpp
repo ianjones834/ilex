@@ -3,7 +3,10 @@
 //
 
 #include "regex.h"
+#include "../tests/utils.h"
 
+#include <iostream>
+#include <ostream>
 #include <stack>
 
 
@@ -42,6 +45,7 @@ NFA* regex_parse(string str) {
                     op = opStack.top();
                 }
 
+                opStack.pop();
                 break;
             }
             case '|': {
@@ -62,6 +66,51 @@ NFA* regex_parse(string str) {
                 nfaStack.pop();
                 nfaStack.push(newNfa);
 
+                break;
+            }
+            case '?': {
+                NFA* newNfa = nfa_optional(nfaStack.top());
+                nfaStack.pop();
+                nfaStack.push(newNfa);
+                break;
+            }
+            case '[': {
+                int j = i + 1;
+                stack<NFA*> rangeStack;
+
+                while (str[j] != ']') {
+                    if (j + 1 < str.length() && str[j + 1] == '-') {
+                        if (j +2 < str.length() && str[j] < str[j + 2]) {
+                            rangeStack.push(nfa_range(str[j], str[j + 2]));
+                            j += 2;
+                        }
+                    }
+                    else {
+                        rangeStack.push(nfa_new_single_char(str[j]));
+                    }
+
+                    j++;
+                }
+
+                while (rangeStack.size() > 1) {
+                    NFA* lhs = rangeStack.top();
+                    rangeStack.pop();
+                    NFA* rhs = rangeStack.top();
+                    rangeStack.pop();
+
+                    rangeStack.push(nfa_union(lhs, rhs));
+                }
+
+                if (!nfaStack.empty()) {
+                    NFA* newNfa = nfa_concat(nfaStack.top(), rangeStack.top());
+                    nfaStack.pop();
+                    nfaStack.push(newNfa);
+                }
+                else {
+                    nfaStack.push(rangeStack.top());
+                }
+
+                i = j;
                 break;
             }
             default: {
