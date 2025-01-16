@@ -5,17 +5,16 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-#include<string>
-#include<iostream>
-#include<vector>
+#include<chrono>
 using namespace std;
+using namespace std::chrono;
 
 struct Test {
     string name;
     bool(*action)();
 };
 
-#define INIT_TESTING() Test* test; vector<Test*> tests;
+#define INIT_TESTING() Test* test; vector<Test*> tests; auto start = high_resolution_clock::now();
 
 #define TEST(x,y) \
     test = new Test; \
@@ -26,19 +25,23 @@ struct Test {
 #define START_TESTS() \
     int testsPassed = 0; \
     int testsFailed = 0; \
-    for (int i = 0; i < tests.size(); i++) { \
-        bool pass = tests[i]->action(); \
-        cout << "TEST " << i + 1 << ": "; \
+    for (Test* test : tests) { \
+        bool pass = test->action(); \
+        cout << "TEST " << testsPassed + testsFailed + 1 << ": "; \
         if (pass) { \
-            cout << tests[i]->name << " Passed" << endl; \
+            cout << test->name << " Passed" << endl; \
             testsPassed++; \
         } \
         else { \
-            cout << tests[i]->name << " Failed" << endl; \
+            cout << test->name << " Failed" << endl; \
             testsFailed++; \
         } \
-        delete tests[i]; \
+        delete test; \
     } \
-    cout << endl << "Tests Passed: " << testsPassed << " Tests Failed: " << testsFailed << endl;
+    cout << endl << "Tests Passed: " << testsPassed << " Tests Failed: " << testsFailed << endl; \
+    auto stop = high_resolution_clock::now(); \
+    auto duration = duration_cast<milliseconds>(stop - start); \
+    cout << endl << duration.count() << endl; \
+    return 0;
 
 #endif //TESTS_H
