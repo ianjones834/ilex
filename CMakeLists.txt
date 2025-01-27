@@ -36,3 +36,17 @@ add_executable(regex-tests tests/regex-tests.cpp
         src/regex.cpp
         src/state.h
 )
+add_executable(convert-tests tests/convert-tests.cpp
+        tests/utils.h
+        tests/utils.cpp
+        tests/tests.h
+        src/nfa.h
+        src/nfa.cpp
+        src/regex.cpp
+        src/regex.h
+        src/state.h
+        src/dfa.cpp
+        src/dfa.h
+        src/convert.cpp
+        src/convert.h
+)

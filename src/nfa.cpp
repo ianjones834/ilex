@@ -172,8 +172,8 @@ NFA *nfa_range(char start, char end) {
 
 
 
-unordered_set<State*> epsilon_closure(NFA* nfa, State* s) {
-    unordered_set<State*> res;
+set<State*> epsilon_closure(NFA* nfa, State* s) {
+    set<State*> res;
     stack<State*> toSearch;
 
     res.insert(s);
@@ -194,8 +194,8 @@ unordered_set<State*> epsilon_closure(NFA* nfa, State* s) {
     return res;
 }
 
-unordered_set<State*> epsilon_closure(NFA *nfa, unordered_set<State*> stateSet) {
-    unordered_set<State*> res;
+set<State*> epsilon_closure(NFA *nfa, set<State*> stateSet) {
+    set<State*> res;
     stack<State*> toSearch;
 
     for (State* i : stateSet) {
@@ -218,8 +218,8 @@ unordered_set<State*> epsilon_closure(NFA *nfa, unordered_set<State*> stateSet) 
     return res;
 }
 
-unordered_set<State*> move(NFA *nfa, unordered_set<State*> T, char ch) {
-    unordered_set<State*> res;
+set<State*> move(NFA *nfa, set<State*> T, char ch) {
+    set<State*> res;
 
     for (State* cur : T) {
         for (State* state : cur->transitions[ch]) {

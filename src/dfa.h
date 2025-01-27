@@ -7,14 +7,17 @@
 
 #include <unordered_map>
 #include <set>
+#include <unordered_set>
+
+#include "state.h"
 using namespace std;
 
 struct DFA {
-    int startState;
-    set<int> alphabet;
-    set<int> states;
-    int** transitionTable;
-    set<int> acceptedStates;
+    int start;
+    unordered_set<int> states;
+    unordered_map<int, unordered_map<char, int>> transitions;
+    unordered_set<int> acceptedStates;
+    unordered_map<int, int> stateToRuleMap;
 };
 
 bool dfa_serialize(DFA*);

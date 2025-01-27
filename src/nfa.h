@@ -12,7 +12,7 @@ using namespace std;
 
 struct NFA {
     State* start;
-    unordered_set<State*> states;
+    set<State*> states;
 };
 
 NFA* nfa_copy(NFA*);
@@ -31,10 +31,10 @@ NFA* nfa_one_or_more(NFA*);
 
 NFA* nfa_range(char, char);
 
-unordered_set<State*> epsilon_closure(NFA*, State*);
+set<State*> epsilon_closure(NFA*, State*);
 
-unordered_set<State*> epsilon_closure(NFA*, unordered_set<State*>);
+set<State*> epsilon_closure(NFA*, set<State*>);
 
-unordered_set<State*> move(NFA*, unordered_set<State*>, char);
+set<State*> move(NFA*, set<State*>, char);
 
 #endif //NFA_H

@@ -12,6 +12,7 @@
 using namespace std;
 
 ostream& operator<<(ostream&, const NFA&);
+ostream& operator<<(ostream&, const DFA&);
 
 bool simulate_nfa(NFA*, string);
 bool simulate_dfa(DFA*, string);

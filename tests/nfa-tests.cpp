@@ -183,6 +183,4 @@ int main() {
     })
 
     START_TESTS()
-
-    return 0;
   }

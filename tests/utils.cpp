@@ -51,8 +51,12 @@ ostream& operator<<(ostream& os, const NFA& nfa) {
     return os;
 }
 
+ostream& operator<<(ostream& os, const DFA& dfa) {
+    return os;
+}
+
 bool simulate_nfa(NFA *nfa, string input) {
-    unordered_set<State*> stateSet = epsilon_closure(nfa, nfa->start);
+    set<State*> stateSet = epsilon_closure(nfa, nfa->start);
 
     for (char ch : input) {
         stateSet = epsilon_closure(nfa, move(nfa, stateSet, ch));
@@ -68,7 +72,18 @@ bool simulate_nfa(NFA *nfa, string input) {
     return false;
 }
 
-bool simulate_dfa(DFA *dfa, string input, const bool debug) {
-    return false;
+bool simulate_dfa(DFA *dfa, string input) {
+    int cur = 0;
+
+    for (char ch : input) {
+        if (dfa->transitions[cur].contains(ch)) {
+            cur = dfa->transitions[cur][ch];
+        }
+        else {
+            return false;
+        }
+    }
+
+    return dfa->acceptedStates.contains(cur);
 }
 

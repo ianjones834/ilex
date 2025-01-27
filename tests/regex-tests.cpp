@@ -71,6 +71,7 @@ int main() {
     REGEX_TEST_PASS("[ab]", "b")
     REGEX_TEST_PASS("[a-c]*", "abc")
     REGEX_TEST_PASS("[a-c]+", "abc")
+    REGEX_TEST_PASS("[ a-zA-Z0-9]*", "Hello there my name is ianjones834")
 
     START_TESTS()
 }
