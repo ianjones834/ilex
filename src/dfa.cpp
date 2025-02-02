@@ -3,3 +3,7 @@
 //
 
 #include "dfa.h"
+
+bool dfa_serialize(DFA* dfa, ostream& out) {
+    return true;
+}

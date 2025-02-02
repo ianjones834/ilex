@@ -5,6 +5,7 @@
 #ifndef DFA_H
 #define DFA_H
 
+#include <ostream>
 #include <unordered_map>
 #include <set>
 #include <unordered_set>
@@ -17,9 +18,9 @@ struct DFA {
     unordered_set<int> states;
     unordered_map<int, unordered_map<char, int>> transitions;
     unordered_set<int> acceptedStates;
-    unordered_map<int, int> stateToRuleMap;
+    unordered_map<int, set<int>> stateToRuleMap;
 };
 
-bool dfa_serialize(DFA*);
+bool dfa_serialize(DFA*, ostream&);
 
 #endif //DFA_H

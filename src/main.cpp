@@ -1,6 +1,10 @@
 #include "ilex.h"
+#include "../tests/utils.h"
 #include<iostream>
 #include<fstream>
+#include <stack>
+
+#include "regex.h"
 
 unordered_map<string, string> namedPatterns;
 
@@ -38,6 +42,10 @@ int ilex(istream& in, ostream& out) {
         switch (fun(in, out)) {
             case 1: {
                 cout << "Unexpected end of file" << endl;
+                return -1;
+            }
+            case 2: {
+                cout << "Invalid action format" << endl;
                 return -1;
             }
             default: {}
@@ -111,14 +119,163 @@ int definitionsScanner(istream& in, ostream& out) {
 
 int rulesScanner(istream& in, ostream& out) {
     string cur;
+    int curMachine = 0;
+    stack<NFA*> nfaStack;
 
     while (getline(in, cur)) {
-        if (cur == "%%") {
-            return 0;
+        if (cur.empty()) {
+            continue;
         }
+
+        if (cur == "%%") {
+            break;;
+        }
+
+        string regex;
+
+        int i = 0;
+
+        while (i < cur.length()) {
+            char ch = cur[i];
+            bool inQuotes = false;
+
+            switch (ch) {
+                case ' ': {
+                    if (inQuotes) {
+                        regex += ' ';
+                    }
+                    i++;
+                    break;
+                }
+                case '|': {
+                    regex += ch;
+                    if (i + 1 == cur.length() || cur[i + 1] == ' ') {
+                        if (!getline(in, cur)) {
+                            return 2;
+                        }
+
+                        i = 0;
+                    }
+                    else {
+                        i++;
+                    }
+                    break;
+                }
+                case '"': {
+                    inQuotes = !inQuotes;
+                    break;
+                }
+                case '{': {
+                    if (i > 0 && cur[i - 1] == ' ' && regex.length() > 0) {
+                        string action;
+                        int leftParenthesisCount = 1;
+                        i++;
+                        while (true) {
+                            if (cur[i] == '}') {
+                                leftParenthesisCount--;
+                            }
+
+                            if (!leftParenthesisCount) {
+                                break;
+                            }
+
+                            if (i < cur.length()) {
+                                action += cur[i++];
+                            }
+                            else if (i == cur.length()) {
+                                action += '\n';
+
+                                if (!getline(in, cur)) {
+                                    return 2;
+                                }
+
+                                i = 0;
+                            }
+                        }
+
+                        if (action.find("return")) {
+                            out << "int ";
+                        }
+                        else {
+                            out << "void ";
+                        }
+                        out << "action" << curMachine << "() {" << endl;
+
+
+                        out << action << "\n}" << endl;
+
+                        if (!getline(in, cur)) {
+                            return 2;
+                        }
+
+                        i = 0;
+                    }
+                    else {
+                        while (i < cur.length() && cur[i] != '}') {
+                            if (cur[i] == ' ') {
+                                return 2;
+                            }
+
+                            regex += cur[i++];
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    if (i > 0 && cur[i - 1] == ' ') {
+                        string action;
+
+
+
+                        while (i < cur.length()) {
+                            action += cur[i++];
+                        }
+
+                        if (action.find("return")) {
+                            out << "int ";
+                        }
+                        else {
+                            out << "void ";
+                        }
+
+                        out << "action" << curMachine << "() {" << endl;
+
+                        out << action << "\n}" << endl;
+                    }
+                    else {
+                        regex += ch;
+                        i++;
+                    }
+                }
+            }
+        }
+
+        NFA* nfa = regex_parse(regex);
+
+        for (State* state : nfa->states) {
+            state->nfaNum = curMachine;
+        }
+
+        nfaStack.push(nfa);
+        curMachine++;
     }
 
-    return 1;
+    while (nfaStack.size() > 1) {
+        NFA* nfa1 = nfaStack.top();
+        nfaStack.pop();
+        NFA* nfa2 = nfaStack.top();
+        nfaStack.pop();
+
+        nfaStack.push(nfa_union(nfa1, nfa2));
+    }
+
+    DFA* dfa = convert(nfaStack.top());
+
+    if (!dfa_serialize(dfa, out)) {
+        return 2;
+    }
+
+    return 0;
 }
 
 int subroutinesScanner(istream& in, ostream& out) {

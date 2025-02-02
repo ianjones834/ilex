@@ -11,6 +11,8 @@ int ilex(istream&, ostream&);
 
 int definitionsScanner(istream&, ostream&);
 int rulesScanner(istream&, ostream&);
+int regexScanner(istream&, ostream&);
 int subroutinesScanner(istream&, ostream&);
+void eatSpace(string);
 
 #endif //ILEX_H

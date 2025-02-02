@@ -13,6 +13,7 @@ DFA* convert(NFA* nfa) {
 
     map<set<State*>, int> stateMap;
     unordered_set<char>* alphabet = getAlphabet(nfa);
+    unordered_map<int, set<int>> actionMap;
 
     stack<set<State*>> toProcess;
 
@@ -21,6 +22,12 @@ DFA* convert(NFA* nfa) {
     toProcess.push(start);
     stateMap[start] = stateCount++;
 
+    for (State* state : start) {
+        if (state->acceptingState) {
+            actionMap[stateMap[start]].insert(state->nfaNum);
+        }
+    }
+
     while (!toProcess.empty()) {
         set<State*> cur = toProcess.top();
         toProcess.pop();
@@ -28,6 +35,7 @@ DFA* convert(NFA* nfa) {
         for (State* state : cur) {
             if (state->acceptingState) {
                 dfa->acceptedStates.insert(stateMap[cur]);
+                actionMap[stateMap[cur]].insert(state->nfaNum);
                 break;
             }
         }
