@@ -5,12 +5,12 @@
 #ifndef ILEX_H
 #define ILEX_H
 
-#include <iostream>
-#include <fstream>
 #include "convert.h"
 
-int definitionsScanner(ifstream&, ofstream&);
-int rulesScanner(ifstream&, ofstream&);
-int subroutinesScanner(ifstream&, ofstream&);
+int ilex(istream&, ostream&);
+
+int definitionsScanner(istream&, ostream&);
+int rulesScanner(istream&, ostream&);
+int subroutinesScanner(istream&, ostream&);
 
 #endif //ILEX_H
