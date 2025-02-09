@@ -3,11 +3,10 @@
 //
 
 #include "nfa.h"
-
 #include <queue>
-
-#include "../tests/utils.h"
 #include <stack>
+#include <stdexcept>
+#include <unordered_set>
 
 NFA *nfa_copy(NFA *nfa1) {
     NFA* nfa = new NFA;

@@ -1,8 +1,8 @@
 #include "ilex.h"
-#include "../tests/utils.h"
 #include<iostream>
 #include<fstream>
 #include <stack>
+#include<regex>
 
 #include "regex.h"
 
@@ -57,6 +57,11 @@ int ilex(istream& in, ostream& out) {
 
 int definitionsScanner(istream& in, ostream& out) {
     string cur;
+
+    out << "\t#include<unordered_map>" << endl;
+    out << "\t#include<unordered_set>" << endl;
+    out << "\t#include<string>" << endl;
+    out << "\t#include<iostream>" << endl;
 
     while (getline(in, cur)) {
         if (cur == "%%") {
@@ -117,6 +122,8 @@ int definitionsScanner(istream& in, ostream& out) {
     return 1;
 }
 
+
+
 int rulesScanner(istream& in, ostream& out) {
     string cur;
     int curMachine = 0;
@@ -166,13 +173,14 @@ int rulesScanner(istream& in, ostream& out) {
                     break;
                 }
                 case '{': {
-                    if (i > 0 && cur[i - 1] == ' ' && regex.length() > 0) {
+                    if (i > 0 && cur[i - 1] == ' ' && !regex.empty()) {
                         string action;
                         int leftParenthesisCount = 1;
                         i++;
                         while (true) {
                             if (cur[i] == '}') {
                                 leftParenthesisCount--;
+                                i++;
                             }
 
                             if (!leftParenthesisCount) {
@@ -193,22 +201,11 @@ int rulesScanner(istream& in, ostream& out) {
                             }
                         }
 
-                        if (action.find("return")) {
-                            out << "int ";
-                        }
-                        else {
-                            out << "void ";
-                        }
-                        out << "action" << curMachine << "() {" << endl;
-
-
-                        out << action << "\n}" << endl;
-
-                        if (!getline(in, cur)) {
-                            return 2;
+                        if (!regex_search(action, std::regex("[;\n]?[\\s]*return.*;"))) {
+                            action += "\nreturn -1;\n";
                         }
 
-                        i = 0;
+                        out << "int action" << curMachine << "() {\n" << action << "\n}" << endl;
                     }
                     else {
                         while (i < cur.length() && cur[i] != '}') {
@@ -225,22 +222,15 @@ int rulesScanner(istream& in, ostream& out) {
                     if (i > 0 && cur[i - 1] == ' ') {
                         string action;
 
-
-
                         while (i < cur.length()) {
                             action += cur[i++];
                         }
 
-                        if (action.find("return")) {
-                            out << "int ";
-                        }
-                        else {
-                            out << "void ";
+                        if (!regex_search(action, std::regex("[;\n]?[\\s]*return.*;"))) {
+                            action += "\nreturn -1;\n";
                         }
 
-                        out << "action" << curMachine << "() {" << endl;
-
-                        out << action << "\n}" << endl;
+                        out << "int action" << curMachine << "() {\n" << action << "\n}" << endl;
                     }
                     else {
                         regex += ch;
@@ -271,9 +261,54 @@ int rulesScanner(istream& in, ostream& out) {
 
     DFA* dfa = convert(nfaStack.top());
 
+    out << "int yylex() {" << endl;
+
+
+
     if (!dfa_serialize(dfa, out)) {
         return 2;
     }
+    out << string("    std::string input;\n") +
+            "    while (getline(std::cin, input)) {\n" +
+            "        int i = 0;\n" +
+            "        while (i < input.length()) {\n" +
+            "            int cur = START;\n" +
+            "            int(*mostRecentAction)() = nullptr;\n" +
+            "            int mostRecentActionLength = -1;\n" +
+            "            while (i < input.length()) {\n" +
+            "                char ch = input[i];\n" +
+            "                if (acceptedStates[cur]) {\n" +
+            "                   mostRecentAction = stateToActionMap[cur];\n" +
+            "                   mostRecentActionLength = i;\n" +
+            "                }\n" +
+            "                if (transitions[cur].contains(ch)) {\n" +
+            "                    cur = transitions[cur].at(ch);\n" +
+            "                }\n" +
+            "                else {\n" +
+            "                   break;\n" +
+            "                }\n" +
+            "                i++;\n" +
+            "            }\n" +
+            "            if (acceptedStates[cur]) {\n" +
+            "               mostRecentAction = stateToActionMap[cur];\n" +
+            "               mostRecentActionLength = i;\n" +
+            "            }\n" +
+            "            int res = -2;\n" +
+            "            if (mostRecentAction != nullptr) {\n" +
+            "                res = mostRecentAction();\n" +
+            "            }\n" +
+            "            if (res != -2) {\n" +
+            "                i = mostRecentActionLength;\n" +
+            "                continue;\n" +
+            "            }\n" +
+            "            else {\n" +
+            "                break;\n" +
+            "            }\n" +
+            "            return -1;\n" +
+            "        }\n" +
+            "    }\n" +
+            "   return 1;\n" +
+            "}\n";
 
     return 0;
 }

@@ -4,6 +4,7 @@
 
 #ifndef STATE_H
 #define STATE_H
+
 #include <set>
 #include <unordered_map>
 using namespace std;

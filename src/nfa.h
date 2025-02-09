@@ -5,8 +5,6 @@
 #ifndef NFA_H
 #define NFA_H
 
-#include <unordered_set>
-
 #include "state.h"
 using namespace std;
 

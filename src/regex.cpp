@@ -3,10 +3,6 @@
 //
 
 #include "regex.h"
-#include "../tests/utils.h"
-
-#include <iostream>
-#include <ostream>
 #include <stack>
 
 

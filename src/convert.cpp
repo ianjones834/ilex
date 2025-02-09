@@ -21,12 +21,7 @@ DFA* convert(NFA* nfa) {
     set<State*> start = epsilon_closure(nfa, nfa->start);
     toProcess.push(start);
     stateMap[start] = stateCount++;
-
-    for (State* state : start) {
-        if (state->acceptingState) {
-            actionMap[stateMap[start]].insert(state->nfaNum);
-        }
-    }
+    dfa->states = unordered_set<int>{0};
 
     while (!toProcess.empty()) {
         set<State*> cur = toProcess.top();
@@ -40,10 +35,17 @@ DFA* convert(NFA* nfa) {
             }
         }
 
+        for (State* state : cur) {
+            if (state->acceptingState) {
+                dfa->stateToRuleMap[stateMap[cur]].insert(state->nfaNum);
+            }
+        }
+
         for (char ch : *alphabet) {
             set<State*> next = epsilon_closure(nfa, move(nfa, cur, ch));
 
             if (!stateMap.contains(next)) {
+                dfa->states.insert(stateCount);
                 stateMap[next] = stateCount++;
                 toProcess.push(next);
             }
@@ -61,7 +63,9 @@ unordered_set<char>* getAlphabet(NFA* nfa) {
 
     for (State* state : nfa->states) {
         for (const auto& pair : state->transitions) {
-            alphabet->insert(pair.first);
+            if (pair.first != 0) {
+                alphabet->insert(pair.first);
+            }
         }
     }
 
