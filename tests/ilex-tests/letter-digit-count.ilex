@@ -1,0 +1,26 @@
+%{
+    int letterCount = 0;
+    int digitCount = 0;
+
+    void printStuff() {
+        printf("Letters: %d, Digits: %d\n", letterCount, digitCount);
+    }
+%}
+
+%%
+
+[a-zA-Z] {
+    letterCount++;
+    printStuff();
+}
+
+[0-9] {
+    digitCount++;
+    printStuff();
+}
+
+%%
+
+int main() {
+    yylex();
+}
