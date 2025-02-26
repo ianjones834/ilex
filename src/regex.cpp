@@ -47,21 +47,18 @@ NFA* regex_parse(string str) {
             case '|': {
                 opStack.push(ch);
                 newSubExpression = true;
-
                 break;
             }
             case '*': {
                 NFA* newNfa = nfa_zero_or_more(nfaStack.top());
                 nfaStack.pop();
                 nfaStack.push(newNfa);
-
                 break;
             }
             case '+': {
                 NFA* newNfa = nfa_one_or_more(nfaStack.top());
                 nfaStack.pop();
                 nfaStack.push(newNfa);
-
                 break;
             }
             case '?': {
@@ -71,42 +68,76 @@ NFA* regex_parse(string str) {
                 break;
             }
             case '[': {
-                int j = i + 1;
-                stack<NFA*> rangeStack;
+                if (str[i + 1] == '^') {
+                    int j = i + 2;
 
-                while (str[j] != ']') {
-                    if (j + 1 < str.length() && str[j + 1] == '-') {
-                        if (j +2 < str.length() && str[j] < str[j + 2]) {
-                            rangeStack.push(nfa_range(str[j], str[j + 2]));
-                            j += 2;
+                    set<char> charsToAvoid;
+
+                    while (j < str.length() && str[j] != ']') {
+                        if (j + 1 < str.length() && str[j + 1] == '-') {
+                            if (j + 2 < str.length() && str[j] < str[j + 2]) {
+                                for (char tmpCh = str[j]; tmpCh < str[j + 2]; tmpCh++) {
+                                    charsToAvoid.insert(tmpCh);
+                                }
+
+                                j += 2;
+                            }
                         }
+                        else {
+                            charsToAvoid.insert(str[j]);
+                        }
+
+                        j++;
                     }
-                    else {
-                        rangeStack.push(nfa_new_single_char(str[j]));
-                    }
 
-                    j++;
-                }
-
-                while (rangeStack.size() > 1) {
-                    NFA* lhs = rangeStack.top();
-                    rangeStack.pop();
-                    NFA* rhs = rangeStack.top();
-                    rangeStack.pop();
-
-                    rangeStack.push(nfa_union(lhs, rhs));
-                }
-
-                if (!nfaStack.empty()) {
-                    NFA* newNfa = nfa_concat(nfaStack.top(), rangeStack.top());
-                    nfaStack.pop();
+                    NFA* newNfa = nfa_notInRange(charsToAvoid);
                     nfaStack.push(newNfa);
+                    i = j;
                 }
                 else {
-                    nfaStack.push(rangeStack.top());
+                    int j = i + 1;
+                    stack<NFA*> rangeStack;
+
+                    while (j < str.length() && str[j] != ']') {
+                        if (j + 1 < str.length() && str[j + 1] == '-') {
+                            if (j +2 < str.length() && str[j] < str[j + 2]) {
+                                rangeStack.push(nfa_range(str[j], str[j + 2]));
+                                j += 2;
+                            }
+                        }
+                        else {
+                            rangeStack.push(nfa_new_single_char(str[j]));
+                        }
+
+                        j++;
+                    }
+
+                    while (rangeStack.size() > 1) {
+                        NFA* lhs = rangeStack.top();
+                        rangeStack.pop();
+                        NFA* rhs = rangeStack.top();
+                        rangeStack.pop();
+
+                        rangeStack.push(nfa_union(lhs, rhs));
+                    }
+
+                    if (!nfaStack.empty()) {
+                        NFA* newNfa = nfa_concat(nfaStack.top(), rangeStack.top());
+                        nfaStack.pop();
+                        nfaStack.push(newNfa);
+                    }
+                    else {
+                        nfaStack.push(rangeStack.top());
+                    }
+
+                    i = j;
                 }
 
-                i = j;
+                break;
+            }
+            case '.': {
+                NFA* newNfa = nfa_any();
+                nfaStack.push(newNfa);
                 break;
             }
             default: {

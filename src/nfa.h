@@ -29,10 +29,14 @@ NFA* nfa_one_or_more(NFA*);
 
 NFA* nfa_range(char, char);
 
-set<State*> epsilon_closure(NFA*, State*);
+NFA* nfa_any();
 
-set<State*> epsilon_closure(NFA*, set<State*>);
+NFA* nfa_notInRange(set<char>);
 
-set<State*> move(NFA*, set<State*>, char);
+set<State*> epsilon_closure(State*);
+
+set<State*> epsilon_closure(set<State*>);
+
+set<State*> move(set<State*>, char);
 
 #endif //NFA_H

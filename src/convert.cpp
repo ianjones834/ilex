@@ -18,7 +18,7 @@ DFA* convert(NFA* nfa) {
     stack<set<State*>> toProcess;
 
     int stateCount = 0;
-    set<State*> start = epsilon_closure(nfa, nfa->start);
+    set<State*> start = epsilon_closure(nfa->start);
     toProcess.push(start);
     stateMap[start] = stateCount++;
     dfa->states = unordered_set<int>{0};
@@ -42,7 +42,7 @@ DFA* convert(NFA* nfa) {
         }
 
         for (char ch : *alphabet) {
-            set<State*> next = epsilon_closure(nfa, move(nfa, cur, ch));
+            set<State*> next = epsilon_closure(move(cur, ch));
 
             if (!stateMap.contains(next)) {
                 dfa->states.insert(stateCount);

@@ -8,9 +8,10 @@
 #include <unordered_map>
 
 #include "../src/nfa.h"
-unordered_map<State*, int> stateNumMap;
 
 ostream& operator<<(ostream& os, const NFA& nfa) {
+    unordered_map<State*, int> stateNumMap;
+
     stateNumMap.clear();
     queue<State*> stateQueue;
     int stateNum = 0;
@@ -52,14 +53,22 @@ ostream& operator<<(ostream& os, const NFA& nfa) {
 }
 
 ostream& operator<<(ostream& os, const DFA& dfa) {
+    for (const auto& pair : dfa.transitions) {
+        os << "State: " << pair.first << ((dfa.acceptedStates.contains(pair.first)) ? " (Accepting) " : " ") << "Transitions: " << endl;
+
+        for (const auto& transitionPair : pair.second) {
+            os << "\t" << transitionPair.first << " -> " << transitionPair.second << endl;
+        }
+    }
+
     return os;
 }
 
 bool simulate_nfa(NFA *nfa, string input) {
-    set<State*> stateSet = epsilon_closure(nfa, nfa->start);
+    set<State*> stateSet = epsilon_closure(nfa->start);
 
     for (char ch : input) {
-        stateSet = epsilon_closure(nfa, move(nfa, stateSet, ch));
+        stateSet = epsilon_closure(move(stateSet, ch));
         if (stateSet.empty()) return false;
     }
 

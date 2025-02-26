@@ -10,18 +10,26 @@
 #define CONVERT_TEST_PASS(x,y) \
 {string testName = "CONVERT ("; testName += (x); testName += ","; testName += (y); testName += ")"; \
 TEST(testName, []() -> bool { \
-    DFA* dfa = convert(regex_parse((x))); \
+    NFA* nfa = regex_parse((x)); \
+    DFA* dfa = convert(nfa); \
+    for (State* s : nfa->states) delete s; \
+    delete nfa; \
     bool res = simulate_dfa(dfa, (y)); \
     if (!res) cout << *dfa; \
+    delete dfa; \
     return res; \
     })}
 
 #define CONVERT_TEST_FAIL(x,y) \
 {string testName = "CONVERT ("; testName += (x); testName += ", "; testName += (y); testName += ")"; \
     TEST(testName, []() -> bool { \
-    DFA* dfa = convert(regex_parse((x))); \
+    NFA * nfa = regex_parse((x)); \
+    DFA* dfa = convert(nfa); \
+    for (State* s : nfa->states) delete s; \
+    delete nfa; \
     bool res = simulate_dfa(dfa, (y)); \
     if (res) cout << *dfa; \
+    delete dfa; \
     return !res; \
     })}
 
@@ -73,6 +81,9 @@ int main() {
     CONVERT_TEST_PASS("[a-c]*", "abc")
     CONVERT_TEST_PASS("[a-c]+", "abc")
     CONVERT_TEST_PASS("[ a-zA-Z0-9]*", "Hello there my name is ianjones834")
+    CONVERT_TEST_PASS(".", " ");
+    CONVERT_TEST_PASS("[^a-z]", "A");
+    CONVERT_TEST_FAIL("[^a-z]", "a");
 
     START_TESTS()
 }

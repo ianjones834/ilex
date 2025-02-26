@@ -27,7 +27,7 @@ ostream& operator<<(ostream& out, const unordered_map<int, unordered_map<char, i
         out << "\t\t{";
         
         for (auto charMap : transitions.at(i)) {
-            out << "{'" << charMap.first << "', " << charMap.second << "}, ";
+            out << "{" << (int) charMap.first << ", " << charMap.second << "}, ";
         }
 
         out << "}," << endl;

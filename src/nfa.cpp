@@ -90,6 +90,8 @@ NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
         nfa->states.insert(state);
     }
 
+    delete nfa1;
+    delete nfa2;
     return nfa;
 }
 
@@ -112,6 +114,8 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
         nfa->states.insert(state);
     }
 
+    delete nfa1;
+    delete nfa2;
 
     return nfa;
 }
@@ -134,7 +138,7 @@ NFA *nfa_zero_or_more(const NFA *nfa1, const bool oneOrMore) {
         }
     }
 
-    if (!oneOrMore) delete nfa1;
+    delete nfa1;
 
     return nfa;
 }
@@ -142,7 +146,7 @@ NFA *nfa_zero_or_more(const NFA *nfa1, const bool oneOrMore) {
 NFA *nfa_one_or_more(NFA *nfa1) {
     NFA* nfaCopy = nfa_copy(nfa1);
 
-    return nfa_concat(nfaCopy, nfa_zero_or_more(nfa1, true));
+    return nfa_concat(nfaCopy, nfa_zero_or_more(nfa1));
 }
 
 NFA *nfa_optional(NFA *nfa1) {
@@ -162,16 +166,44 @@ NFA *nfa_range(char start, char end) {
 
     NFA* nfa = nfa_new_single_char(start);
 
-    for (char ch = start + 1; ch <= end; ch += 1) {
+    for (char ch = start + 1; start < ch && ch <= end; ch++) {
         nfa = nfa_union(nfa, nfa_new_single_char(ch));
     }
 
     return nfa;
 }
 
+NFA *nfa_any() {
+    return nfa_range(1, 127);
+}
+
+NFA *nfa_notInRange(set<char> notAccepted) {
+    NFA *nfa = nullptr;
+
+    int i = 1;
+
+    while (i < 127) {
+        if (!notAccepted.contains(i)) {
+            nfa = nfa_new_single_char(i);
+            break;
+        }
+
+        i++;
+    }
+
+    for (int j = ++i; j < 127; j++) {
+        if (notAccepted.contains(j)) {
+            continue;
+        }
+
+        nfa = nfa_union(nfa, nfa_new_single_char(j));
+    }
+
+    return nfa;
+}
 
 
-set<State*> epsilon_closure(NFA* nfa, State* s) {
+set<State*> epsilon_closure(State* s) {
     set<State*> res;
     stack<State*> toSearch;
 
@@ -193,7 +225,7 @@ set<State*> epsilon_closure(NFA* nfa, State* s) {
     return res;
 }
 
-set<State*> epsilon_closure(NFA *nfa, set<State*> stateSet) {
+set<State*> epsilon_closure(set<State*> stateSet) {
     set<State*> res;
     stack<State*> toSearch;
 
@@ -217,7 +249,7 @@ set<State*> epsilon_closure(NFA *nfa, set<State*> stateSet) {
     return res;
 }
 
-set<State*> move(NFA *nfa, set<State*> T, char ch) {
+set<State*> move(set<State*> T, char ch) {
     set<State*> res;
 
     for (State* cur : T) {

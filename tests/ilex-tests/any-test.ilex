@@ -1,0 +1,19 @@
+%{
+    #include<iostream>
+    int characterCount = 0;
+%}
+
+%%
+
+. printf("Characters: %d\n", characterCount++);
+
+%%
+
+int yywrap() {
+    return 0;
+}
+
+int main() {
+    yylex();
+    return 0;
+}

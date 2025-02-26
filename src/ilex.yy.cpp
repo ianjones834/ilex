@@ -1,7 +1,8 @@
-	#include<unordered_map>
-	#include<unordered_set>
-	#include<string>
-	#include<iostream>
+#include<unordered_map>
+#include<unordered_set>
+#include<string>
+#include<iostream>
+#include<csignal>
     int letterCount = 0;
     int digitCount = 0;
 
@@ -24,7 +25,13 @@ int action1() {
 return -1;
 
 }
+int yywrap();
+bool _yyKeepReading = true;
+void yy_sig(int signum) {
+	_yyKeepReading = false;
+}
 int yylex() {
+	signal(SIGHUP, yy_sig);
 	const int START = 0;
 	const int STATE_NUM = 64;
 	const std::unordered_map<char,int> transitions[STATE_NUM] = {
@@ -96,7 +103,7 @@ int yylex() {
 	const bool acceptedStates[STATE_NUM] = {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,};
 	int(*stateToActionMap[STATE_NUM])() = { nullptr, &action1, &action1, &action1, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action1, &action0, &action1, &action0, &action1, &action0, &action1, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action1, &action0, &action1, &action0, &action1, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, &action0, nullptr, };
     std::string input;
-    while (getline(std::cin, input)) {
+    while (getline(std::cin, input) && _yyKeepReading) {
         int i = 0;
         while (i < input.length()) {
             int cur = START;
@@ -134,9 +141,13 @@ int yylex() {
             return -1;
         }
     }
-   return 1;
+   return yywrap();
 }
 
+int yywrap() {
+    printf("Final Count:\n\tLetters: %d, Digits: %d\n", letterCount, digitCount);
+    return 0;
+}
 int main() {
     yylex();
 }

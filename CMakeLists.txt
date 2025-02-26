@@ -53,4 +53,7 @@ add_executable(convert-tests tests/convert-tests.cpp
         src/convert.cpp
         src/convert.h
 )
-add_executable(ilex.yy.cpp src/ilex.yy.cpp)
+add_executable(ilex.yy src/ilex.yy.cpp)
+add_executable(ilex-tests tests/ilex-tests.cpp
+    ilex
+)

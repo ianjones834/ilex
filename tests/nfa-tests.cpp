@@ -6,7 +6,6 @@
 #include "utils.h"
 #include "tests.h"
 
-
 int main() {
     INIT_TESTING()
 
@@ -176,6 +175,34 @@ int main() {
 
         for (State* state : nfa->states)
             delete state;
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("NFA Range ([a-z]*, 'abcdefghijklmnopqrstuvwxyz')", []() -> bool {
+        NFA* nfa = nfa_zero_or_more(nfa_range('a', 'z'));
+
+        bool res = simulate_nfa(nfa, "abcdefghijklmnopqrstuvwxyz");
+
+        for (State* state : nfa->states) {
+            delete state;
+        }
+
+        delete nfa;
+
+        return res;
+    })
+
+    TEST("NFA any character ( ., ' ')", []() -> bool {
+        NFA* nfa = nfa_any();
+
+        bool res = simulate_nfa(nfa, " ");
+
+        for (State* state : nfa->states) {
+            delete state;
+        }
 
         delete nfa;
 

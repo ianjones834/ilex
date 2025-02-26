@@ -12,6 +12,8 @@ TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
     bool res = simulate_nfa(nfa, (y)); \
     if (!res) cout << *nfa; \
+    for (State* s : nfa->states) delete s; \
+    delete nfa; \
     return res; \
     })}
 
@@ -21,6 +23,8 @@ TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
     bool res = simulate_nfa(nfa, (y)); \
     if (res) cout << *nfa; \
+    for (State* s : nfa->states) delete s; \
+    delete nfa; \
     return !res; \
     })}
 
@@ -72,6 +76,8 @@ int main() {
     REGEX_TEST_PASS("[a-c]*", "abc")
     REGEX_TEST_PASS("[a-c]+", "abc")
     REGEX_TEST_PASS("[ a-zA-Z0-9]*", "Hello there my name is ianjones834")
+    REGEX_TEST_PASS("[^a-z]*", "HI THERE");
+    REGEX_TEST_FAIL("[^a-z]", "a");
 
     START_TESTS()
 }

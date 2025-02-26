@@ -1,14 +1,23 @@
+#include <csignal>
+
 #include "ilex.h"
-#include<iostream>
-#include<fstream>
+#include <iostream>
+#include <fstream>
 #include <stack>
-#include<regex>
+#include <regex>
 
 #include "regex.h"
 
 unordered_map<string, string> namedPatterns;
 
+bool keepReading = true;
+
+void handle_sighup(int signum) {
+    keepReading = false;
+}
+
 int main(int argc, char *argv[]) {
+    signal(SIGHUP, handle_sighup);
     if (argc == 1) {
         ofstream outFile;
         outFile.open("./ilex.yy.cpp");
@@ -58,12 +67,13 @@ int ilex(istream& in, ostream& out) {
 int definitionsScanner(istream& in, ostream& out) {
     string cur;
 
-    out << "\t#include<unordered_map>" << endl;
-    out << "\t#include<unordered_set>" << endl;
-    out << "\t#include<string>" << endl;
-    out << "\t#include<iostream>" << endl;
+    out << "#include<unordered_map>" << endl;
+    out << "#include<unordered_set>" << endl;
+    out << "#include<string>" << endl;
+    out << "#include<iostream>" << endl;
+    out << "#include<csignal>" << endl;
 
-    while (getline(in, cur)) {
+    while (getline(in, cur) && keepReading) {
         if (cur == "%%") {
             return 0;
         }
@@ -128,8 +138,10 @@ int rulesScanner(istream& in, ostream& out) {
     string cur;
     int curMachine = 0;
     stack<NFA*> nfaStack;
+    unordered_set<int> matchStart;
+    unordered_set<int> matchEnd;
 
-    while (getline(in, cur)) {
+    while (getline(in, cur) && keepReading) {
         if (cur.empty()) {
             continue;
         }
@@ -141,11 +153,11 @@ int rulesScanner(istream& in, ostream& out) {
         string regex;
 
         int i = 0;
+        bool regexNoAction = true;
 
         while (i < cur.length()) {
             char ch = cur[i];
             bool inQuotes = false;
-
             switch (ch) {
                 case ' ': {
                     if (inQuotes) {
@@ -206,6 +218,7 @@ int rulesScanner(istream& in, ostream& out) {
                         }
 
                         out << "int action" << curMachine << "() {\n" << action << "\n}" << endl;
+                        regexNoAction = false;
                     }
                     else {
                         while (i < cur.length() && cur[i] != '}') {
@@ -231,6 +244,7 @@ int rulesScanner(istream& in, ostream& out) {
                         }
 
                         out << "int action" << curMachine << "() {\n" << action << "\n}" << endl;
+                        regexNoAction = false;
                     }
                     else {
                         regex += ch;
@@ -240,10 +254,25 @@ int rulesScanner(istream& in, ostream& out) {
             }
         }
 
+        if (regexNoAction && !regex.empty()) {
+            out << "// " << regex << endl;
+            out << "int action" << curMachine << "() {return -1;}" << endl;
+        }
+
         NFA* nfa = regex_parse(regex);
 
         for (State* state : nfa->states) {
             state->nfaNum = curMachine;
+        }
+
+        if (!regex.empty()) {
+            if (regex[0] == '^') {
+                matchStart.insert(curMachine);
+            }
+
+            if (regex[regex.length() - 1] == '$') {
+                matchEnd.insert(curMachine);
+            }
         }
 
         nfaStack.push(nfa);
@@ -259,9 +288,43 @@ int rulesScanner(istream& in, ostream& out) {
         nfaStack.push(nfa_union(nfa1, nfa2));
     }
 
-    DFA* dfa = convert(nfaStack.top());
+    out << "std::unordered_set<int> matchStart = {";
+
+    for (int i : matchStart) {
+        out << " " << i << ",";
+    }
+
+    out << " };" << endl;
+
+    out << "std::unordered_set<int> matchEnd = {";
+
+    for (int i : matchEnd) {
+        out << " " << i << ",";
+    }
+
+    out << " };" << endl;
+
+    DFA* dfa;
+
+    if (!nfaStack.empty()) {
+        dfa = convert(nfaStack.top());
+    }
+    else {
+        return 2;
+    }
+
+    for (State* s : nfaStack.top() -> states) delete s;
+
+    delete nfaStack.top();
+
+    out << "int yywrap();" << endl;
+    out << "bool _yyKeepReading = true;" << endl;
+    out << "void yy_sig(int signum) {" << endl;
+    out << "\t_yyKeepReading = false; " << endl;
+    out << "}" << endl;
 
     out << "int yylex() {" << endl;
+    out << "\tsignal(SIGHUP, yy_sig);" << endl;
 
 
 
@@ -269,15 +332,17 @@ int rulesScanner(istream& in, ostream& out) {
         return 2;
     }
     out << string("    std::string input;\n") +
-            "    while (getline(std::cin, input)) {\n" +
+            "    while (getline(std::cin, input) && _yyKeepReading) {\n" +
             "        int i = 0;\n" +
+            "        int curStart = 0;\n" +
             "        while (i < input.length()) {\n" +
             "            int cur = START;\n" +
+            "            curStart = i;\n" +
             "            int(*mostRecentAction)() = nullptr;\n" +
             "            int mostRecentActionLength = -1;\n" +
             "            while (i < input.length()) {\n" +
             "                char ch = input[i];\n" +
-            "                if (acceptedStates[cur]) {\n" +
+            "                if (acceptedStates[cur] && (matchStart.contains(cur) ? curStart == 0 : true) && (matchEnd.contains(cur) ? i == input.length() : true)) {\n" +
             "                   mostRecentAction = stateToActionMap[cur];\n" +
             "                   mostRecentActionLength = i;\n" +
             "                }\n" +
@@ -289,7 +354,7 @@ int rulesScanner(istream& in, ostream& out) {
             "                }\n" +
             "                i++;\n" +
             "            }\n" +
-            "            if (acceptedStates[cur]) {\n" +
+            "            if (acceptedStates[cur] && (matchStart.contains(cur) ? curStart == 0 : true) && (matchEnd.contains(cur) ? i == input.length() : true)) {\n" +
             "               mostRecentAction = stateToActionMap[cur];\n" +
             "               mostRecentActionLength = i;\n" +
             "            }\n" +
@@ -307,15 +372,16 @@ int rulesScanner(istream& in, ostream& out) {
             "            return -1;\n" +
             "        }\n" +
             "    }\n" +
-            "   return 1;\n" +
+            "   return yywrap();\n" +
             "}\n";
 
+    delete dfa;
     return 0;
 }
 
 int subroutinesScanner(istream& in, ostream& out) {
     string cur;
-    while (getline(in, cur)) {
+    while (getline(in, cur) && keepReading) {
         out << cur << endl;
     }
 
