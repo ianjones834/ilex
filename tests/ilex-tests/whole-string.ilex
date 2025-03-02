@@ -1,0 +1,16 @@
+%{
+    int stringCount = 0;
+%}
+
+%%
+
+^ian$ printf("Hi Ian");
+^Jones$ printf("Hi Mr. Jones");
+[\n\t]
+
+%%
+
+int yywrap() { return 0;}
+int main() {
+    yylex();
+}

@@ -10,6 +10,6 @@
 #include "dfa.h"
 #include "nfa.h"
 
-DFA* convert(NFA*);
+DFA* convert(NFA*, unordered_set<int>, unordered_set<int>);
 unordered_set<char>* getAlphabet(NFA*);
 #endif //CONVERT_H

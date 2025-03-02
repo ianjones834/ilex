@@ -158,6 +158,7 @@ int rulesScanner(istream& in, ostream& out) {
         while (i < cur.length()) {
             char ch = cur[i];
             bool inQuotes = false;
+            bool inClass = false;
             switch (ch) {
                 case ' ': {
                     if (inQuotes) {
@@ -181,7 +182,25 @@ int rulesScanner(istream& in, ostream& out) {
                     break;
                 }
                 case '"': {
-                    inQuotes = !inQuotes;
+                    if (!inClass) {
+                        inQuotes = !inQuotes;
+                    }
+
+                    break;
+                }
+                case '[': {
+                    inClass = true;
+                    regex += ch;
+                    i++;
+                    break;
+                }
+                case ']': {
+                    if (inClass) {
+                        inClass = false;
+                    }
+
+                    regex += ch;
+                    i++;
                     break;
                 }
                 case '{': {
@@ -254,6 +273,18 @@ int rulesScanner(istream& in, ostream& out) {
             }
         }
 
+        if (!regex.empty()) {
+            if (regex[0] == '^') {
+                matchStart.insert(curMachine);
+                regex = regex.substr(1, regex.length() - 1);
+            }
+
+            if (regex[regex.length() - 1] == '$') {
+                matchEnd.insert(curMachine);
+                regex = regex.substr(0, regex.length() - 1);
+            }
+        }
+
         if (regexNoAction && !regex.empty()) {
             out << "// " << regex << endl;
             out << "int action" << curMachine << "() {return -1;}" << endl;
@@ -263,16 +294,6 @@ int rulesScanner(istream& in, ostream& out) {
 
         for (State* state : nfa->states) {
             state->nfaNum = curMachine;
-        }
-
-        if (!regex.empty()) {
-            if (regex[0] == '^') {
-                matchStart.insert(curMachine);
-            }
-
-            if (regex[regex.length() - 1] == '$') {
-                matchEnd.insert(curMachine);
-            }
         }
 
         nfaStack.push(nfa);
@@ -288,26 +309,11 @@ int rulesScanner(istream& in, ostream& out) {
         nfaStack.push(nfa_union(nfa1, nfa2));
     }
 
-    out << "std::unordered_set<int> matchStart = {";
-
-    for (int i : matchStart) {
-        out << " " << i << ",";
-    }
-
-    out << " };" << endl;
-
-    out << "std::unordered_set<int> matchEnd = {";
-
-    for (int i : matchEnd) {
-        out << " " << i << ",";
-    }
-
-    out << " };" << endl;
 
     DFA* dfa;
 
     if (!nfaStack.empty()) {
-        dfa = convert(nfaStack.top());
+        dfa = convert(nfaStack.top(), matchStart, matchEnd);
     }
     else {
         return 2;
@@ -324,9 +330,6 @@ int rulesScanner(istream& in, ostream& out) {
     out << "}" << endl;
 
     out << "int yylex() {" << endl;
-    out << "\tsignal(SIGHUP, yy_sig);" << endl;
-
-
 
     if (!dfa_serialize(dfa, out)) {
         return 2;
@@ -342,7 +345,7 @@ int rulesScanner(istream& in, ostream& out) {
             "            int mostRecentActionLength = -1;\n" +
             "            while (i < input.length()) {\n" +
             "                char ch = input[i];\n" +
-            "                if (acceptedStates[cur] && (matchStart.contains(cur) ? curStart == 0 : true) && (matchEnd.contains(cur) ? i == input.length() : true)) {\n" +
+            "                if (acceptedStates[cur] && (matchStart[cur] ? curStart == 0 : true) && (matchEnd[cur] ? i == input.length() : true)) {\n" +
             "                   mostRecentAction = stateToActionMap[cur];\n" +
             "                   mostRecentActionLength = i;\n" +
             "                }\n" +
@@ -354,7 +357,7 @@ int rulesScanner(istream& in, ostream& out) {
             "                }\n" +
             "                i++;\n" +
             "            }\n" +
-            "            if (acceptedStates[cur] && (matchStart.contains(cur) ? curStart == 0 : true) && (matchEnd.contains(cur) ? i == input.length() : true)) {\n" +
+            "            if (acceptedStates[cur] && (matchStart[cur] ? curStart == 0 : true) && (matchEnd[cur] ? i == input.length() : true)) {\n" +
             "               mostRecentAction = stateToActionMap[cur];\n" +
             "               mostRecentActionLength = i;\n" +
             "            }\n" +

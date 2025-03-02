@@ -76,6 +76,22 @@ bool dfa_serialize(DFA* dfa, ostream& out) {
 
         out << "};" << endl;
 
+        out << "\tconst bool matchStart[STATE_NUM] = {";
+
+        for (int i = 0; i < STATE_NUM; i++) {
+            out << dfa->matchStart.contains(i) << ",";
+        }
+
+        out << "};" << endl;
+
+        out << "\tconst bool matchEnd[STATE_NUM] = {";
+
+        for (int i = 0; i < STATE_NUM; i++) {
+            out << dfa->matchEnd.contains(i) << ",";
+        }
+
+        out << "};" << endl;
+
         out << "\tint(*stateToActionMap[STATE_NUM])() = " << dfa->stateToRuleMap << ";" << endl;
         return true;
     }

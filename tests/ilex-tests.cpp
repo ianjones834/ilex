@@ -10,6 +10,9 @@ int main() {
 
 
         system(("./ilex " + entry.path().string()).c_str());
+
+
+
         system("g++ --std=c++20 ilex.yy.cpp -o ilex.yy");
         system("./ilex.yy");
     }

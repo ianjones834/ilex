@@ -7,7 +7,7 @@
 #include <map>
 #include <stack>
 
-DFA* convert(NFA* nfa) {
+DFA* convert(NFA* nfa, unordered_set<int> matchStart, unordered_set<int> matchEnd) {
     DFA* dfa = new DFA;
     dfa->start = 0;
 
@@ -31,6 +31,15 @@ DFA* convert(NFA* nfa) {
             if (state->acceptingState) {
                 dfa->acceptedStates.insert(stateMap[cur]);
                 actionMap[stateMap[cur]].insert(state->nfaNum);
+
+                if (matchStart.contains(state->nfaNum)) {
+                    dfa->matchStart.insert(stateMap[cur]);
+                }
+
+                if (matchEnd.contains(state->nfaNum)) {
+                    dfa->matchEnd.insert(stateMap[cur]);
+                }
+
                 break;
             }
         }
