@@ -300,6 +300,14 @@ int rulesScanner(istream& in, ostream& out) {
         curMachine++;
     }
 
+    NFA* nfa = regex_parse(".");
+
+    for (State* state : nfa->states) {
+        state->nfaNum = curMachine;
+    }
+    out << "int action" << curMachine++ << "() {return -1;}" << endl;
+    nfaStack.push(nfa);
+
     while (nfaStack.size() > 1) {
         NFA* nfa1 = nfaStack.top();
         nfaStack.pop();

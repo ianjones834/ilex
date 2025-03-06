@@ -182,7 +182,7 @@ int main() {
     })
 
     TEST("NFA Range ([a-z]*, 'abcdefghijklmnopqrstuvwxyz')", []() -> bool {
-        NFA* nfa = nfa_zero_or_more(nfa_range('a', 'z'));
+        NFA* nfa = nfa_zero_or_more(nfa_range({}, {{'a', 'z'}}));
 
         bool res = simulate_nfa(nfa, "abcdefghijklmnopqrstuvwxyz");
 

@@ -1,0 +1,11 @@
+%%
+
+^ian$ printf("Hi Ian\n");
+^jones$ printf("Hi Mr. Jones\n");
+
+%%
+
+int yywrap() { return 0;}
+int main() {
+    yylex();
+}

@@ -96,38 +96,28 @@ NFA* regex_parse(string str) {
                 }
                 else {
                     int j = i + 1;
-                    stack<NFA*> rangeStack;
+                    set<char> charSet;
+                    set<pair<char, char>> rangeSet;
 
                     while (j < str.length() && str[j] != ']') {
-                        if (j + 1 < str.length() && str[j + 1] == '-') {
-                            if (j +2 < str.length() && str[j] < str[j + 2]) {
-                                rangeStack.push(nfa_range(str[j], str[j + 2]));
-                                j += 2;
-                            }
+                        if (j + 1 < str.length() && str[j + 1] == '-' && j + 2 < str.length() && str[j] < str[j + 2]) {
+                            rangeSet.insert({str[j], str[j + 2]});
+                            j += 2;
                         }
                         else {
-                            rangeStack.push(nfa_new_single_char(str[j]));
+                            charSet.insert(str[j]);
                         }
 
                         j++;
                     }
 
-                    while (rangeStack.size() > 1) {
-                        NFA* lhs = rangeStack.top();
-                        rangeStack.pop();
-                        NFA* rhs = rangeStack.top();
-                        rangeStack.pop();
-
-                        rangeStack.push(nfa_union(lhs, rhs));
-                    }
-
                     if (!nfaStack.empty()) {
-                        NFA* newNfa = nfa_concat(nfaStack.top(), rangeStack.top());
+                        NFA* newNfa = nfa_concat(nfaStack.top(), nfa_range(charSet, rangeSet));
                         nfaStack.pop();
                         nfaStack.push(newNfa);
                     }
                     else {
-                        nfaStack.push(rangeStack.top());
+                        nfaStack.push(nfa_range(charSet, rangeSet));
                     }
 
                     i = j;
@@ -138,6 +128,29 @@ NFA* regex_parse(string str) {
             case '.': {
                 NFA* newNfa = nfa_any();
                 nfaStack.push(newNfa);
+                break;
+            }
+            case '{': {
+                int j = i + 1;
+
+                string firstNum = "";
+
+                while (j < str.length() && str[j] != ',') {
+                    firstNum += str[j++];
+                }
+
+                j++;
+
+                string secondNum = "";
+
+                while (j < str.length() && str[j] != '}') {
+                    secondNum += str[j++];
+                }
+
+                NFA* newNfa = nfa_repeat(nfaStack.top(), stoi(firstNum), stoi(secondNum));
+                nfaStack.pop();
+                nfaStack.push(newNfa);
+                i = j + 1;
                 break;
             }
             default: {

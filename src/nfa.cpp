@@ -12,7 +12,6 @@ NFA *nfa_copy(NFA *nfa1) {
     NFA* nfa = new NFA;
 
     unordered_map<State*, State*> oldToNewStates;
-    unordered_set<State*> seen;
     queue<State*> stateQueue;
 
     nfa->start = new State;
@@ -20,7 +19,6 @@ NFA *nfa_copy(NFA *nfa1) {
     nfa->states.insert(nfa->start);
 
     stateQueue.push(nfa1->start);
-    seen.insert(nfa1->start);
 
     oldToNewStates.emplace(nfa1->start, nfa->start);
 
@@ -33,7 +31,7 @@ NFA *nfa_copy(NFA *nfa1) {
 
             for (auto pair : cur->transitions) {
                 for (State* state : pair.second) {
-                    if (!seen.contains(state)) {
+                    if (!oldToNewStates.contains(state)) {
                         State* newState = new State;
                         newState->acceptingState = state->acceptingState;
 
@@ -43,7 +41,9 @@ NFA *nfa_copy(NFA *nfa1) {
                         nfa->states.insert(newState);
 
                         stateQueue.push(state);
-                        seen.insert(state);
+                    }
+                    else {
+                        oldToNewStates[cur]->transitions[pair.first].insert(oldToNewStates[state]);
                     }
                 }
             }
@@ -57,8 +57,8 @@ NFA *nfa_copy(NFA *nfa1) {
 NFA* nfa_new_single_char(const char ch) {
     NFA* nfa = new NFA;
 
-    auto* start = new State;
-    auto* end = new State;
+    State* start = new State;
+    State* end = new State;
 
     end->acceptingState = true;
     start->transitions.emplace(ch, set<State*>{end});
@@ -82,16 +82,12 @@ NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
 
     nfa->start->transitions.emplace(0, set<State*>{nfa1->start, nfa2->start});
 
-    for (State* state : nfa1->states) {
-        nfa->states.insert(state);
-    }
-
-    for (State* state : nfa2->states) {
-        nfa->states.insert(state);
-    }
+    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
+    nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
 
     delete nfa1;
     delete nfa2;
+
     return nfa;
 }
 
@@ -100,18 +96,14 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
 
     nfa->start = nfa1->start;
 
+    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
+    nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
+
     for (State* state : nfa1->states) {
-        State* newState = state;
-        if (newState->acceptingState == true) {
-            newState->acceptingState = false;
-            newState->transitions[0].insert(nfa2->start);
+        if (state->acceptingState) {
+            state->acceptingState = false;
+            state->transitions[0].insert(nfa2->start);
         }
-
-        nfa->states.insert(newState);
-    }
-
-    for (State* state : nfa2->states) {
-        nfa->states.insert(state);
     }
 
     delete nfa1;
@@ -120,21 +112,20 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
     return nfa;
 }
 
-NFA *nfa_zero_or_more(const NFA *nfa1, const bool oneOrMore) {
+NFA *nfa_zero_or_more(const NFA *nfa1) {
     NFA *nfa = new NFA;
 
     nfa->start = new State;
+
     nfa->start->acceptingState = true;
     nfa->start->transitions.emplace(0, set<State*>{nfa1->start});
 
     nfa->states.insert(nfa->start);
+    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
 
     for (State* state : nfa1->states) {
-        State* newState = state;
-        nfa->states.insert(newState);
-
-        if (newState->acceptingState == true) {
-                newState->transitions[0].insert(nfa->start);
+        if (state->acceptingState) {
+            state->transitions[0].insert(nfa->start);
         }
     }
 
@@ -149,57 +140,101 @@ NFA *nfa_one_or_more(NFA *nfa1) {
     return nfa_concat(nfaCopy, nfa_zero_or_more(nfa1));
 }
 
-NFA *nfa_optional(NFA *nfa1) {
-    for (State* state : nfa1->states) {
+NFA *nfa_optional(NFA *nfa) {
+    NFA* nfaRes = nfa_copy(nfa);
+
+    for (State* state : nfaRes->states) {
         if (state->acceptingState) {
-            nfa1->start->transitions[0].insert(state);
+            nfaRes->start->transitions[0].insert(state);
         }
     }
 
-    return nfa1;
+    delete nfa;
+    return nfaRes;
 }
 
-NFA *nfa_range(char start, char end) {
-    if (start > end) {
-        throw std::invalid_argument("[end must be less than start]");
+NFA *nfa_range(set<char> charSet, set<pair<char, char>> charRangeSet) {
+    NFA* nfa = new NFA;
+    nfa->start = new State;
+    nfa->states.insert(nfa->start);
+
+    for (char ch : charSet) {
+        State* newState = new State;
+        State* acceptingState = new State;
+
+        newState->transitions[ch].insert(acceptingState);
+        acceptingState->acceptingState = true;
+
+        nfa->start->transitions[0].insert(newState);
+
+        nfa->states.insert(newState);
+        nfa->states.insert(acceptingState);
     }
 
-    NFA* nfa = nfa_new_single_char(start);
+    for (auto [start, end] : charRangeSet) {
+        if (start > end) {
+            throw std::invalid_argument("[end must be less than start]");
+        }
 
-    for (char ch = start + 1; start < ch && ch <= end; ch++) {
-        nfa = nfa_union(nfa, nfa_new_single_char(ch));
+        for (char ch = start; start <= ch && ch <= end; ch++) {
+            State* newState = new State;
+            State* acceptingState = new State;
+
+            acceptingState->acceptingState = true;
+            newState->transitions.emplace(ch, set<State*>{acceptingState});
+
+            nfa->start->transitions[0].insert(newState);
+            nfa->states.insert(newState);
+            nfa->states.insert(acceptingState);
+        }
     }
 
     return nfa;
 }
 
 NFA *nfa_any() {
-    return nfa_range(1, 127);
+    return nfa_range({}, {{1, 127}});
 }
 
 NFA *nfa_notInRange(set<char> notAccepted) {
-    NFA *nfa = nullptr;
+    set<char> charSet;
 
-    int i = 1;
-
-    while (i < 127) {
+    for (int i = 1; i < 128; i++) {
         if (!notAccepted.contains(i)) {
-            nfa = nfa_new_single_char(i);
-            break;
+            charSet.insert(i);
         }
-
-        i++;
     }
 
-    for (int j = ++i; j < 127; j++) {
-        if (notAccepted.contains(j)) {
-            continue;
-        }
+    return nfa_range(charSet, {});
+}
 
-        nfa = nfa_union(nfa, nfa_new_single_char(j));
+NFA *nfa_repeat(NFA* nfa, int left, int right) {
+    NFA* nfaCopy = nfa_copy(nfa);
+    NFA* res;
+
+    if (left > 0) {
+        res = nfa_copy(nfa);
+    }
+    else {
+        res = nfa_optional(nfa_copy(nfa));
     }
 
-    return nfa;
+    for (int i = 1; i < left; i++) {
+        NFA* tmp = nfa_copy(nfaCopy);
+        res = nfa_concat(res, tmp);
+    }
+
+    NFA* optionalCopy = nfa_optional(nfa_copy(nfaCopy));
+
+    for (int i = left; i < right; i++) {
+        NFA* tmp = nfa_copy(optionalCopy);
+        res = nfa_concat(res, tmp);
+    }
+
+    delete nfa;
+    delete optionalCopy;
+
+    return res;
 }
 
 

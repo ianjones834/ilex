@@ -23,15 +23,17 @@ NFA* nfa_concat(NFA*, NFA*);
 
 NFA* nfa_optional(NFA*);
 
-NFA* nfa_zero_or_more(const NFA*, bool oneOrMore = false);
+NFA* nfa_zero_or_more(const NFA*);
 
 NFA* nfa_one_or_more(NFA*);
 
-NFA* nfa_range(char, char);
+NFA* nfa_range(set<char>, set<pair<char, char>>);
 
 NFA* nfa_any();
 
 NFA* nfa_notInRange(set<char>);
+
+NFA* nfa_repeat(NFA*, int, int);
 
 set<State*> epsilon_closure(State*);
 

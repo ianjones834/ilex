@@ -8,10 +8,10 @@
 #include "utils.h"
 
 #define CONVERT_TEST_PASS(x,y) \
-{string testName = "CONVERT ("; testName += (x); testName += ","; testName += (y); testName += ")"; \
+{string testName = "CONVERT PASS ("; testName += (x); testName += ","; testName += (y); testName += ")"; \
 TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
-    DFA* dfa = convert(nfa); \
+    DFA* dfa = convert(nfa, {}, {}); \
     for (State* s : nfa->states) delete s; \
     delete nfa; \
     bool res = simulate_dfa(dfa, (y)); \
@@ -21,10 +21,10 @@ TEST(testName, []() -> bool { \
     })}
 
 #define CONVERT_TEST_FAIL(x,y) \
-{string testName = "CONVERT ("; testName += (x); testName += ", "; testName += (y); testName += ")"; \
+{string testName = "CONVERT FAIL ("; testName += (x); testName += ", "; testName += (y); testName += ")"; \
     TEST(testName, []() -> bool { \
     NFA * nfa = regex_parse((x)); \
-    DFA* dfa = convert(nfa); \
+    DFA* dfa = convert(nfa, {}, {}); \
     for (State* s : nfa->states) delete s; \
     delete nfa; \
     bool res = simulate_dfa(dfa, (y)); \
@@ -80,10 +80,26 @@ int main() {
     CONVERT_TEST_PASS("[ab]", "b")
     CONVERT_TEST_PASS("[a-c]*", "abc")
     CONVERT_TEST_PASS("[a-c]+", "abc")
+    CONVERT_TEST_PASS("[ a-zA-Z0-9]", "A")
     CONVERT_TEST_PASS("[ a-zA-Z0-9]*", "Hello there my name is ianjones834")
     CONVERT_TEST_PASS(".", " ");
     CONVERT_TEST_PASS("[^a-z]", "A");
     CONVERT_TEST_FAIL("[^a-z]", "a");
+    CONVERT_TEST_PASS("A{1,3}", "A");
+    CONVERT_TEST_PASS("A{1,3}", "AA");
+    CONVERT_TEST_PASS("A{1,3}", "AAA");
+    CONVERT_TEST_FAIL("A{1,3}", "AAAA");
+    CONVERT_TEST_PASS("A{1,5}", "AAAA");
+    CONVERT_TEST_FAIL("A{3,5}", "AA");
+    CONVERT_TEST_PASS("(jones|ian)(ian)?(ian)?", "jonesianian");
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alice");
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice");
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice");
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealicealice");
+    CONVERT_TEST_FAIL("(alice|bob){1,3}", "alicealicealicealice");
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "bobalicebob");
+    CONVERT_TEST_PASS("(alice|bob){0,3}", "alicebobbob");
+    CONVERT_TEST_PASS("(alice|bob){0,3}", "");
 
     START_TESTS()
 }

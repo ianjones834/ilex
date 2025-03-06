@@ -8,7 +8,8 @@
 #include "../src/nfa.h"
 #include "../src/dfa.h"
 #include<string>
-#include <iostream>
+#include<iostream>
+#include<unordered_set>
 using namespace std;
 
 ostream& operator<<(ostream&, const NFA&);
