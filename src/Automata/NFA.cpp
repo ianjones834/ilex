@@ -2,7 +2,7 @@
 // Created by ian on 1/12/25.
 //
 
-#include "nfa.h"
+#include "NFA.h"
 #include <queue>
 #include <stack>
 #include <stdexcept>
@@ -11,11 +11,11 @@
 NFA *nfa_copy(NFA *nfa1) {
     NFA* nfa = new NFA;
 
-    unordered_map<State*, State*> oldToNewStates;
-    queue<State*> stateQueue;
+    unordered_map<NFAState*, NFAState*> oldToNewStates;
+    queue<NFAState*> stateQueue;
 
-    nfa->start = new State;
-    nfa->start->acceptingState = nfa1->start->acceptingState;
+    nfa->start = new NFAState;
+    nfa->start->acceptState = nfa1->start->acceptState;
     nfa->states.insert(nfa->start);
 
     stateQueue.push(nfa1->start);
@@ -26,14 +26,14 @@ NFA *nfa_copy(NFA *nfa1) {
         int curLevelSize = stateQueue.size();
 
         while (curLevelSize--) {
-            State* cur = stateQueue.front();
+            NFAState* cur = stateQueue.front();
             stateQueue.pop();
 
             for (auto pair : cur->transitions) {
-                for (State* state : pair.second) {
+                for (NFAState* state : pair.second) {
                     if (!oldToNewStates.contains(state)) {
-                        State* newState = new State;
-                        newState->acceptingState = state->acceptingState;
+                        NFAState* newState = new NFAState;
+                        newState->acceptState = state->acceptState;
 
                         oldToNewStates[state] = newState;
                         oldToNewStates[cur]->transitions[pair.first].insert(newState);
@@ -57,14 +57,14 @@ NFA *nfa_copy(NFA *nfa1) {
 NFA* nfa_new_single_char(const char ch) {
     NFA* nfa = new NFA;
 
-    State* start = new State;
-    State* end = new State;
+    NFAState* start = new NFAState;
+    NFAState* end = new NFAState;
 
-    end->acceptingState = true;
-    start->transitions.emplace(ch, set<State*>{end});
+    end->acceptState = true;
+    start->transitions[ch] = unordered_set<NFAState*>{end};
 
     nfa->start = start;
-    nfa->start->acceptingState = false;
+    nfa->start->acceptState = false;
 
     nfa->states.insert(start);
     nfa->states.insert(end);
@@ -75,12 +75,12 @@ NFA* nfa_new_single_char(const char ch) {
 NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
     NFA* nfa = new NFA;
 
-    nfa->start = new State;
-    nfa->start->acceptingState = false;
+    nfa->start = new NFAState;
+    nfa->start->acceptState = false;
 
     nfa->states.insert(nfa->start);
 
-    nfa->start->transitions.emplace(0, set<State*>{nfa1->start, nfa2->start});
+    nfa->start->transitions[0] = unordered_set<NFAState*>{nfa1->start, nfa2->start};
 
     nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
     nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
@@ -99,9 +99,9 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
     nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
     nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
 
-    for (State* state : nfa1->states) {
-        if (state->acceptingState) {
-            state->acceptingState = false;
+    for (NFAState* state : nfa1->states) {
+        if (state->acceptState) {
+            state->acceptState = false;
             state->transitions[0].insert(nfa2->start);
         }
     }
@@ -115,16 +115,16 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
 NFA *nfa_zero_or_more(const NFA *nfa1) {
     NFA *nfa = new NFA;
 
-    nfa->start = new State;
+    nfa->start = new NFAState;
 
-    nfa->start->acceptingState = true;
-    nfa->start->transitions.emplace(0, set<State*>{nfa1->start});
+    nfa->start->acceptState = true;
+    nfa->start->transitions[0] = unordered_set<NFAState*>{nfa1->start};
 
     nfa->states.insert(nfa->start);
     nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
 
-    for (State* state : nfa1->states) {
-        if (state->acceptingState) {
+    for (NFAState* state : nfa1->states) {
+        if (state->acceptState) {
             state->transitions[0].insert(nfa->start);
         }
     }
@@ -143,8 +143,8 @@ NFA *nfa_one_or_more(NFA *nfa1) {
 NFA *nfa_optional(NFA *nfa) {
     NFA* nfaRes = nfa_copy(nfa);
 
-    for (State* state : nfaRes->states) {
-        if (state->acceptingState) {
+    for (NFAState* state : nfaRes->states) {
+        if (state->acceptState) {
             nfaRes->start->transitions[0].insert(state);
         }
     }
@@ -153,17 +153,17 @@ NFA *nfa_optional(NFA *nfa) {
     return nfaRes;
 }
 
-NFA *nfa_range(set<char> charSet, set<pair<char, char>> charRangeSet) {
+NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> charRangeSet) {
     NFA* nfa = new NFA;
-    nfa->start = new State;
+    nfa->start = new NFAState;
     nfa->states.insert(nfa->start);
 
     for (char ch : charSet) {
-        State* newState = new State;
-        State* acceptingState = new State;
+        NFAState* newState = new NFAState;
+        NFAState* acceptingState = new NFAState;
 
         newState->transitions[ch].insert(acceptingState);
-        acceptingState->acceptingState = true;
+        acceptingState->acceptState = true;
 
         nfa->start->transitions[0].insert(newState);
 
@@ -171,17 +171,19 @@ NFA *nfa_range(set<char> charSet, set<pair<char, char>> charRangeSet) {
         nfa->states.insert(acceptingState);
     }
 
-    for (auto [start, end] : charRangeSet) {
+    for (auto pair : charRangeSet) {
+        char start = pair->first, end = pair->second;
+
         if (start > end) {
             throw std::invalid_argument("[end must be less than start]");
         }
 
         for (char ch = start; start <= ch && ch <= end; ch++) {
-            State* newState = new State;
-            State* acceptingState = new State;
+            NFAState* newState = new NFAState;
+            NFAState* acceptingState = new NFAState;
 
-            acceptingState->acceptingState = true;
-            newState->transitions.emplace(ch, set<State*>{acceptingState});
+            acceptingState->acceptState = true;
+            newState->transitions[ch] = unordered_set<NFAState*>{acceptingState};
 
             nfa->start->transitions[0].insert(newState);
             nfa->states.insert(newState);
@@ -193,11 +195,11 @@ NFA *nfa_range(set<char> charSet, set<pair<char, char>> charRangeSet) {
 }
 
 NFA *nfa_any() {
-    return nfa_range({}, {{1, 127}});
+    return nfa_range({}, {new pair<char, char>{1, 127}});
 }
 
-NFA *nfa_notInRange(set<char> notAccepted) {
-    set<char> charSet;
+NFA *nfa_notInRange(unordered_set<char> notAccepted) {
+    unordered_set<char> charSet;
 
     for (int i = 1; i < 128; i++) {
         if (!notAccepted.contains(i)) {
@@ -205,7 +207,7 @@ NFA *nfa_notInRange(set<char> notAccepted) {
         }
     }
 
-    return nfa_range(charSet, {});
+    return nfa_range(charSet, unordered_set<pair<char, char>*>{});
 }
 
 NFA *nfa_repeat(NFA* nfa, int left, int right) {
@@ -238,18 +240,18 @@ NFA *nfa_repeat(NFA* nfa, int left, int right) {
 }
 
 
-set<State*> epsilon_closure(State* s) {
-    set<State*> res;
-    stack<State*> toSearch;
+set<NFAState*> epsilon_closure(NFAState* s) {
+    set<NFAState*> res;
+    stack<NFAState*> toSearch;
 
     res.insert(s);
     toSearch.push(s);
 
     while (!toSearch.empty()) {
-        State* cur = toSearch.top();
+        NFAState* cur = toSearch.top();
         toSearch.pop();
 
-        for (State* state : cur->transitions[0]) {
+        for (NFAState* state : cur->transitions[0]) {
             if (!res.contains(state)) {
                 res.insert(state);
                 toSearch.push(state);
@@ -260,20 +262,20 @@ set<State*> epsilon_closure(State* s) {
     return res;
 }
 
-set<State*> epsilon_closure(set<State*> stateSet) {
-    set<State*> res;
-    stack<State*> toSearch;
+set<NFAState*> epsilon_closure(set<NFAState*> stateSet) {
+    set<NFAState*> res;
+    stack<NFAState*> toSearch;
 
-    for (State* i : stateSet) {
+    for (NFAState* i : stateSet) {
         toSearch.push(i);
         res.insert(i);
     }
 
     while (!toSearch.empty()) {
-        State* cur = toSearch.top();
+        NFAState* cur = toSearch.top();
         toSearch.pop();
 
-        for (State* state : cur->transitions[0]) {
+        for (NFAState* state : cur->transitions[0]) {
             if (!res.contains(state)) {
                 res.insert(state);
                 toSearch.push(state);
@@ -284,11 +286,11 @@ set<State*> epsilon_closure(set<State*> stateSet) {
     return res;
 }
 
-set<State*> move(set<State*> T, char ch) {
-    set<State*> res;
+set<NFAState*> move(set<NFAState*> T, char ch) {
+    set<NFAState*> res;
 
-    for (State* cur : T) {
-        for (State* state : cur->transitions[ch]) {
+    for (NFAState* cur : T) {
+        for (NFAState* state : cur->transitions[ch]) {
             res.insert(state);
         }
     }

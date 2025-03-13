@@ -3,19 +3,19 @@
 //
 
 #include "tests.h"
-#include "../src/regex.h"
-#include "../src/convert.h"
+#include "../src/Regex/regex.h"
 #include "utils.h"
 
 #define CONVERT_TEST_PASS(x,y) \
 {string testName = "CONVERT PASS ("; testName += (x); testName += ","; testName += (y); testName += ")"; \
 TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
-    DFA* dfa = convert(nfa, {}, {}); \
-    for (State* s : nfa->states) delete s; \
+    DFA* dfa = new DFA(nfa); \
+    for (NFAState* s : nfa->states) delete s; \
     delete nfa; \
     bool res = simulate_dfa(dfa, (y)); \
     if (!res) cout << *dfa; \
+    for (DFAState* s : dfa->states) delete s; \
     delete dfa; \
     return res; \
     })}
@@ -24,11 +24,12 @@ TEST(testName, []() -> bool { \
 {string testName = "CONVERT FAIL ("; testName += (x); testName += ", "; testName += (y); testName += ")"; \
     TEST(testName, []() -> bool { \
     NFA * nfa = regex_parse((x)); \
-    DFA* dfa = convert(nfa, {}, {}); \
-    for (State* s : nfa->states) delete s; \
+    DFA* dfa = new DFA(nfa); \
+    for (NFAState* s : nfa->states) delete s; \
     delete nfa; \
     bool res = simulate_dfa(dfa, (y)); \
     if (res) cout << *dfa; \
+    for (DFAState* s : dfa->states) delete s; \
     delete dfa; \
     return !res; \
     })}
@@ -91,15 +92,15 @@ int main() {
     CONVERT_TEST_FAIL("A{1,3}", "AAAA");
     CONVERT_TEST_PASS("A{1,5}", "AAAA");
     CONVERT_TEST_FAIL("A{3,5}", "AA");
-    CONVERT_TEST_PASS("(jones|ian)(ian)?(ian)?", "jonesianian");
-    CONVERT_TEST_PASS("(alice|bob){1,3}", "alice");
-    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice");
-    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice");
-    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealicealice");
-    CONVERT_TEST_FAIL("(alice|bob){1,3}", "alicealicealicealice");
-    CONVERT_TEST_PASS("(alice|bob){1,3}", "bobalicebob");
-    CONVERT_TEST_PASS("(alice|bob){0,3}", "alicebobbob");
-    CONVERT_TEST_PASS("(alice|bob){0,3}", "");
+    CONVERT_TEST_PASS("(jones|ian)(ian)?(ian)?", "jonesianian")
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alice")
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice")
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice")
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealicealice")
+    CONVERT_TEST_FAIL("(alice|bob){1,3}", "alicealicealicealice")
+    CONVERT_TEST_PASS("(alice|bob){1,3}", "bobalicebob")
+    CONVERT_TEST_PASS("(alice|bob){0,3}", "alicebobbob")
+    CONVERT_TEST_PASS("(alice|bob){0,3}", "")
 
     START_TESTS()
 }

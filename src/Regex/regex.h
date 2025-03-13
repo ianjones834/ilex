@@ -5,10 +5,10 @@
 #ifndef REGEX_H
 #define REGEX_H
 
-#include "nfa.h"
+#include "../Automata/NFA.h"
 #include<string>
 using namespace std;
 
-NFA* regex_parse(string);
+NFA* regex_parse(string, bool = true);
 
 #endif //REGEX_H

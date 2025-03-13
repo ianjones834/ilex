@@ -5,8 +5,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "../src/nfa.h"
-#include "../src/dfa.h"
+#include "../src/Automata/NFA.h"
+#include "../src/Automata/DFA.h"
 #include<string>
 #include<iostream>
 #include<unordered_set>

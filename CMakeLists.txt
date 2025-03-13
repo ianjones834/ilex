@@ -6,54 +6,62 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
 
 add_executable(ilex src/main.cpp
-        src/convert.cpp
-        src/convert.h
-        src/dfa.cpp
-        src/dfa.h
-        src/nfa.cpp
-        src/nfa.h
-        src/regex.cpp
-        src/regex.h
-        src/state.h
+        src/Automata/DFA.cpp
+        src/Automata/DFA.h
+        src/Automata/NFA.cpp
+        src/Automata/NFA.h
+        src/Regex/regex.cpp
+        src/Regex/regex.h
+        src/Automata/NFAState.h
         src/ilex.h
         tests/utils.cpp
         tests/utils.h
+        src/Automata/DFAState.h
+        src/Automata/DFAState.cpp
+        src/Automata/NFAState.cpp
 )
 
 add_executable(nfa-tests tests/nfa-tests.cpp
         tests/tests.h
         tests/utils.cpp
         tests/utils.h
-        src/nfa.h
-        src/nfa.cpp
-        src/state.h
+        src/Automata/NFA.h
+        src/Automata/NFA.cpp
+        src/Automata/NFAState.h
+        src/Automata/NFAState.cpp
 )
 
 add_executable(regex-tests tests/regex-tests.cpp
         tests/tests.h
         tests/utils.cpp
         tests/utils.h
-        src/nfa.h
-        src/nfa.cpp
-        src/regex.h
-        src/regex.cpp
-        src/state.h
+        src/Automata/NFA.h
+        src/Automata/NFA.cpp
+        src/Regex/regex.h
+        src/Regex/regex.cpp
+        src/Automata/NFAState.h
+        src/Automata/DFAState.h
+        src/Automata/DFAState.cpp
+        src/Automata/NFAState.cpp
 )
 add_executable(convert-tests tests/convert-tests.cpp
         tests/utils.h
         tests/utils.cpp
         tests/tests.h
-        src/nfa.h
-        src/nfa.cpp
-        src/regex.cpp
-        src/regex.h
-        src/state.h
-        src/dfa.cpp
-        src/dfa.h
-        src/convert.cpp
-        src/convert.h
+        src/Automata/NFA.h
+        src/Automata/NFA.cpp
+        src/Regex/regex.cpp
+        src/Regex/regex.h
+        src/Automata/NFAState.h
+        src/Automata/DFA.cpp
+        src/Automata/DFA.h
+        src/Automata/DFAState.h
+        src/Automata/DFAState.cpp
+        src/Automata/NFAState.cpp
+        src/Automata/NFAState.cpp
 )
-add_executable(ilex.yy src/ilex.yy.cpp)
 add_executable(ilex-tests tests/ilex-tests.cpp
-    ilex
+        src/Automata/DFAState.h
+        src/Automata/DFAState.cpp
+        src/Automata/NFAState.cpp
 )

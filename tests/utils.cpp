@@ -7,13 +7,13 @@
 #include <queue>
 #include <unordered_map>
 
-#include "../src/nfa.h"
+#include "../src/Automata/NFA.h"
 
 ostream& operator<<(ostream& os, const NFA& nfa) {
-    unordered_map<State*, int> stateNumMap;
+    unordered_map<NFAState*, int> stateNumMap;
 
     stateNumMap.clear();
-    queue<State*> stateQueue;
+    queue<NFAState*> stateQueue;
     int stateNum = 0;
 
     stateQueue.push(nfa.start);
@@ -23,11 +23,11 @@ ostream& operator<<(ostream& os, const NFA& nfa) {
         int curLevel = stateQueue.size();
 
         while (curLevel--) {
-            State* curState = stateQueue.front();
+            NFAState* curState = stateQueue.front();
             stateQueue.pop();
 
             for (const auto& pair : curState->transitions) {
-                for (State* next : pair.second) {
+                for (NFAState* next : pair.second) {
                     if (!stateNumMap.contains(next)) {
                         stateNumMap[next] = stateNum++;
                         stateQueue.push(next);
@@ -38,10 +38,10 @@ ostream& operator<<(ostream& os, const NFA& nfa) {
     }
 
     for (auto pair : stateNumMap) {
-        os << "State: " << pair.second << (pair.first->acceptingState ? " (Accepting) " : "") << " Transitions: " << endl;
+        os << "State: " << pair.second << (pair.first->acceptState ? " (Accepting) " : "") << " Transitions: " << endl;
 
         for (const auto& transitionPair : pair.first->transitions) {
-            for (State* cur : transitionPair.second) {
+            for (NFAState* cur : transitionPair.second) {
                 os << "\t" << transitionPair.first << " -> " << stateNumMap[cur] << endl;
             }
         }
@@ -53,27 +53,19 @@ ostream& operator<<(ostream& os, const NFA& nfa) {
 }
 
 ostream& operator<<(ostream& os, const DFA& dfa) {
-    for (const auto& pair : dfa.transitions) {
-        os << "State: " << pair.first << ((dfa.acceptedStates.contains(pair.first)) ? " (Accepting) " : " ") << "Transitions: " << endl;
-
-        for (const auto& transitionPair : pair.second) {
-            os << "\t" << transitionPair.first << " -> " << transitionPair.second << endl;
-        }
-    }
-
     return os;
 }
 
 bool simulate_nfa(NFA *nfa, string input) {
-    set<State*> stateSet = epsilon_closure(nfa->start);
+    set<NFAState*> stateSet = epsilon_closure(nfa->start);
 
     for (char ch : input) {
         stateSet = epsilon_closure(move(stateSet, ch));
         if (stateSet.empty()) return false;
     }
 
-    for (State* state : stateSet) {
-        if (state->acceptingState == true) {
+    for (NFAState* state : stateSet) {
+        if (state->acceptState == true) {
             return true;
         }
     }
@@ -82,17 +74,17 @@ bool simulate_nfa(NFA *nfa, string input) {
 }
 
 bool simulate_dfa(DFA *dfa, string input) {
-    int cur = 0;
+    DFAState* cur = dfa->start;
 
     for (char ch : input) {
-        if (dfa->transitions[cur].contains(ch)) {
-            cur = dfa->transitions[cur][ch];
+        if (cur->transitions.contains(ch)) {
+            cur = cur->transitions[ch];
         }
         else {
             return false;
         }
     }
 
-    return dfa->acceptedStates.contains(cur);
+    return cur->acceptState;;
 }
 

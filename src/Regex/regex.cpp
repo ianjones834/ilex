@@ -2,14 +2,32 @@
 // Created by ian on 1/12/25.
 //
 
-#include "regex.h"
+#include <set>
 #include <stack>
 
+#include "regex.h"
 
-
-NFA* regex_parse(string str) {
+NFA* regex_parse(string str, bool isPrimaryNfa) {
     stack<NFA*> nfaStack;
     stack<char> opStack;
+    bool matchStart = false, matchEnd = false, matchStartAndEnd = false;
+
+    if (str[0] == '^') {
+        matchStart = true;
+        str = str.substr(1, str.length() - 1);
+    }
+
+    if (str[str.length() - 1] == '$') {
+        str = str.substr(0, str.length() - 1);
+
+        if (matchStart) {
+            matchStartAndEnd = true;
+            matchStart = false;
+        }
+        else {
+            matchEnd = true;
+        }
+    }
 
     bool newSubExpression = true;
 
@@ -71,7 +89,7 @@ NFA* regex_parse(string str) {
                 if (str[i + 1] == '^') {
                     int j = i + 2;
 
-                    set<char> charsToAvoid;
+                    unordered_set<char> charsToAvoid;
 
                     while (j < str.length() && str[j] != ']') {
                         if (j + 1 < str.length() && str[j + 1] == '-') {
@@ -96,12 +114,12 @@ NFA* regex_parse(string str) {
                 }
                 else {
                     int j = i + 1;
-                    set<char> charSet;
-                    set<pair<char, char>> rangeSet;
+                    unordered_set<char> charSet;
+                    unordered_set<pair<char, char>*> rangeSet;
 
                     while (j < str.length() && str[j] != ']') {
                         if (j + 1 < str.length() && str[j + 1] == '-' && j + 2 < str.length() && str[j] < str[j + 2]) {
-                            rangeSet.insert({str[j], str[j + 2]});
+                            rangeSet.insert(new pair<char, char>{str[j], str[j + 2]});
                             j += 2;
                         }
                         else {
@@ -152,6 +170,9 @@ NFA* regex_parse(string str) {
                 nfaStack.push(newNfa);
                 i = j + 1;
                 break;
+            }
+            case '\\': {
+                ch = str[++i];
             }
             default: {
                 NFA* newNfa = nfa_new_single_char(ch);
@@ -211,6 +232,14 @@ NFA* regex_parse(string str) {
         nfaStack.pop();
 
         nfaStack.push(nfa_concat(lhs, rhs));
+    }
+
+    for (NFAState* state : nfaStack.top()->states) {
+        if (state->acceptState) {
+            state->matchStart = matchStart;
+            state->matchEnd = matchEnd;
+            state->matchStartAndEnd = matchStartAndEnd;
+        }
     }
 
     return nfaStack.top();

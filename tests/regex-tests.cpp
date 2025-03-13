@@ -3,7 +3,7 @@
 //
 
 #include "tests.h"
-#include "../src/regex.h"
+#include "../src/Regex/regex.h"
 #include "utils.h"
 
 #define REGEX_TEST_PASS(x,y) \
@@ -12,7 +12,7 @@ TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
     bool res = simulate_nfa(nfa, (y)); \
     if (!res) cout << *nfa; \
-    for (State* s : nfa->states) delete s; \
+    for (NFAState* s : nfa->states) delete s; \
     delete nfa; \
     return res; \
     })}
@@ -23,7 +23,7 @@ TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
     bool res = simulate_nfa(nfa, (y)); \
     if (res) cout << *nfa; \
-    for (State* s : nfa->states) delete s; \
+    for (NFAState* s : nfa->states) delete s; \
     delete nfa; \
     return !res; \
     })}

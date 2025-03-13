@@ -5,7 +5,8 @@
 #ifndef ILEX_H
 #define ILEX_H
 
-#include "convert.h"
+#include <iostream>
+using namespace std;
 
 int ilex(istream&, ostream&);
 
@@ -13,6 +14,5 @@ int definitionsScanner(istream&, ostream&);
 int rulesScanner(istream&, ostream&);
 int regexScanner(istream&, ostream&);
 int subroutinesScanner(istream&, ostream&);
-void eatSpace(string);
 
 #endif //ILEX_H

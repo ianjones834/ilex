@@ -6,18 +6,14 @@
 #include <stack>
 #include <regex>
 
-#include "regex.h"
+#include "Automata/DFA.h"
+#include "Regex/regex.h"
 
 unordered_map<string, string> namedPatterns;
 
 bool keepReading = true;
 
-void handle_sighup(int signum) {
-    keepReading = false;
-}
-
 int main(int argc, char *argv[]) {
-    signal(SIGHUP, handle_sighup);
     if (argc == 1) {
         ofstream outFile;
         outFile.open("./ilex.yy.cpp");
@@ -73,7 +69,7 @@ int definitionsScanner(istream& in, ostream& out) {
     out << "#include<iostream>" << endl;
     out << "#include<csignal>" << endl;
 
-    while (getline(in, cur) && keepReading) {
+    while (getline(in, cur)) {
         if (cur == "%%") {
             return 0;
         }
@@ -135,40 +131,38 @@ int definitionsScanner(istream& in, ostream& out) {
 
 
 int rulesScanner(istream& in, ostream& out) {
-    string cur;
+    string cur = "";
     int curMachine = 0;
+    int secondaryMachine = 0;
+
     stack<NFA*> nfaStack;
     unordered_set<int> matchStart;
     unordered_set<int> matchEnd;
+    unordered_map<int, int> actionToSecondaryMachine;
 
-    while (getline(in, cur) && keepReading) {
+    while (getline(in, cur)) {
         if (cur.empty()) {
             continue;
         }
 
         if (cur == "%%") {
-            break;;
+            break;
         }
 
-        string regex;
+        string regex = "";
 
         int i = 0;
         bool regexNoAction = true;
 
         while (i < cur.length()) {
-            char ch = cur[i];
-            bool inQuotes = false;
-            bool inClass = false;
-            switch (ch) {
+            switch (char ch = cur[i]) {
                 case ' ': {
-                    if (inQuotes) {
-                        regex += ' ';
-                    }
                     i++;
                     break;
                 }
                 case '|': {
                     regex += ch;
+
                     if (i + 1 == cur.length() || cur[i + 1] == ' ') {
                         if (!getline(in, cur)) {
                             return 2;
@@ -179,27 +173,27 @@ int rulesScanner(istream& in, ostream& out) {
                     else {
                         i++;
                     }
+
                     break;
                 }
                 case '"': {
-                    if (!inClass) {
-                        inQuotes = !inQuotes;
+                    regex += cur[i++];
+
+                    while (i < cur.length() && cur[i] != '"') {
+                        regex += cur[i++];
                     }
+
+                    regex += cur[i++];
 
                     break;
                 }
                 case '[': {
-                    inClass = true;
-                    regex += ch;
-                    i++;
-                    break;
-                }
-                case ']': {
-                    if (inClass) {
-                        inClass = false;
+                    regex += cur[i++];
+
+                    while (i < cur.length() && cur[i] != ']') {
+                        regex += cur[i++];
                     }
 
-                    regex += ch;
                     i++;
                     break;
                 }
@@ -240,15 +234,31 @@ int rulesScanner(istream& in, ostream& out) {
                         regexNoAction = false;
                     }
                     else {
-                        while (i < cur.length() && cur[i] != '}') {
-                            if (cur[i] == ' ') {
+                        string inside = "";
+                        int j = i + 1;
+                        while (j < cur.length() && cur[j] != '}') {
+                            if (cur[j] == ' ') {
                                 return 2;
                             }
 
-                            regex += cur[i++];
+                            inside += cur[j++];
+                        }
+
+                        if (namedPatterns.contains(inside)) {
+                            cur = cur.substr(0, i) + namedPatterns[inside] + cur.substr(j + 1, cur.length() - j - 1);
+                            break;
+                        }
+                        else {
+                            regex += "{" + inside + "}";
+                            i = j + 1;
+                            break;
                         }
                     }
                     break;
+                }
+                case '\\': {
+                    regex += '\\';
+
                 }
                 default: {
                     if (i > 0 && cur[i - 1] == ' ') {
@@ -292,8 +302,8 @@ int rulesScanner(istream& in, ostream& out) {
 
         NFA* nfa = regex_parse(regex);
 
-        for (State* state : nfa->states) {
-            state->nfaNum = curMachine;
+        for (NFAState* state : nfa->states) {
+            state->actionNum = curMachine;
         }
 
         nfaStack.push(nfa);
@@ -302,8 +312,8 @@ int rulesScanner(istream& in, ostream& out) {
 
     NFA* nfa = regex_parse(".");
 
-    for (State* state : nfa->states) {
-        state->nfaNum = curMachine;
+    for (NFAState* state : nfa->states) {
+        state->actionNum = curMachine;
     }
     out << "int action" << curMachine++ << "() {return -1;}" << endl;
     nfaStack.push(nfa);
@@ -317,27 +327,33 @@ int rulesScanner(istream& in, ostream& out) {
         nfaStack.push(nfa_union(nfa1, nfa2));
     }
 
-
     DFA* dfa;
 
     if (!nfaStack.empty()) {
-        dfa = convert(nfaStack.top(), matchStart, matchEnd);
+        dfa = new DFA(nfaStack.top());
     }
     else {
         return 2;
     }
 
-    for (State* s : nfaStack.top() -> states) delete s;
+    for (NFAState* s : nfaStack.top() -> states) delete s;
 
     delete nfaStack.top();
 
+    out << "struct DFAState {\n"
+           "\tint matchStart\n"
+           "\tint matchEnd\n"
+           "\tint matchStartAndEnd\n"
+           "\tint actionNum\n"
+           "\t"
+
+    out << "struct DFA {" << endl;
+    out << "\t"
+
     out << "int yywrap();" << endl;
-    out << "bool _yyKeepReading = true;" << endl;
-    out << "void yy_sig(int signum) {" << endl;
-    out << "\t_yyKeepReading = false; " << endl;
-    out << "}" << endl;
 
     out << "int yylex() {" << endl;
+
 
     if (!dfa_serialize(dfa, out)) {
         return 2;
@@ -392,7 +408,7 @@ int rulesScanner(istream& in, ostream& out) {
 
 int subroutinesScanner(istream& in, ostream& out) {
     string cur;
-    while (getline(in, cur) && keepReading) {
+    while (getline(in, cur)) {
         out << cur << endl;
     }
 

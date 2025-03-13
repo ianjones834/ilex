@@ -2,7 +2,7 @@
 // Created by ian on 1/12/25.
 //
 
-#include "../src/nfa.h"
+#include "../src/Automata/NFA.h"
 #include "utils.h"
 #include "tests.h"
 
@@ -13,7 +13,7 @@ int main() {
         NFA* nfa = nfa_new_single_char('a');
         bool res = simulate_nfa(nfa, string("a"));
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -26,7 +26,7 @@ int main() {
         NFA* nfa = nfa_new_single_char('a');
         bool res = simulate_nfa(nfa, string("aa"));
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -39,7 +39,7 @@ int main() {
         NFA* nfa = nfa_new_single_char('a');
         bool res = simulate_nfa(nfa, " ");
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -53,7 +53,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "a");
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -67,7 +67,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "b");
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -81,7 +81,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "ab");
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -95,7 +95,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "aa");
 
-        for (State* state : nfa->states)
+        for (NFAState* state : nfa->states)
             delete state;
 
         delete nfa;
@@ -108,7 +108,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "ab");
 
-        for (State* state : nfa->states)
+        for (NFAState* state : nfa->states)
             delete state;
 
         delete nfa;
@@ -121,7 +121,7 @@ int main() {
 
        bool res = simulate_nfa(nfa, "a");
 
-       for (State* state : nfa->states)
+       for (NFAState* state : nfa->states)
            delete state;
 
        delete nfa;
@@ -134,7 +134,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "aaa");
 
-        for (State* state : nfa->states)
+        for (NFAState* state : nfa->states)
             delete state;
 
         delete nfa;
@@ -147,7 +147,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "");
 
-        for (State* state : nfa->states)
+        for (NFAState* state : nfa->states)
             delete state;
 
         delete nfa;
@@ -160,7 +160,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "b");
 
-        for (State* state : nfa->states)
+        for (NFAState* state : nfa->states)
             delete state;
 
         delete nfa;
@@ -173,7 +173,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, "a");
 
-        for (State* state : nfa->states)
+        for (NFAState* state : nfa->states)
             delete state;
 
         delete nfa;
@@ -182,11 +182,11 @@ int main() {
     })
 
     TEST("NFA Range ([a-z]*, 'abcdefghijklmnopqrstuvwxyz')", []() -> bool {
-        NFA* nfa = nfa_zero_or_more(nfa_range({}, {{'a', 'z'}}));
+        NFA* nfa = nfa_zero_or_more(nfa_range({}, {new pair<char, char>{'a', 'z'}}));
 
         bool res = simulate_nfa(nfa, "abcdefghijklmnopqrstuvwxyz");
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
@@ -200,7 +200,7 @@ int main() {
 
         bool res = simulate_nfa(nfa, " ");
 
-        for (State* state : nfa->states) {
+        for (NFAState* state : nfa->states) {
             delete state;
         }
 
