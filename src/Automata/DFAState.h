@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <set>
 
-#include "DFA.h"
 #include "NFAState.h"
 using namespace std;
 

@@ -2,13 +2,12 @@
 // Created by ian on 1/15/25.
 //
 
-#ifndef STATE_H
-#define STATE_H
+#ifndef NFASTATE_H
+#define NFASTATE_H
 
 #include <unordered_set>
 #include <unordered_map>
 
-#include "NFA.h"
 using namespace std;
 
 struct NFAState {
@@ -26,4 +25,4 @@ struct NFAState {
     NFAState();
 };
 
-#endif //STATE_H
+#endif //NFASTATE_H

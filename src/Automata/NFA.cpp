@@ -149,6 +149,8 @@ NFA *nfa_optional(NFA *nfa) {
         }
     }
 
+    for (auto state : nfa->states) delete state;
+
     delete nfa;
     return nfaRes;
 }
@@ -189,6 +191,8 @@ NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> cha
             nfa->states.insert(newState);
             nfa->states.insert(acceptingState);
         }
+
+        delete pair;
     }
 
     return nfa;
@@ -233,8 +237,21 @@ NFA *nfa_repeat(NFA* nfa, int left, int right) {
         res = nfa_concat(res, tmp);
     }
 
+    for (auto state : nfa->states) {
+        delete state;
+    }
+
+    for (auto state : optionalCopy->states) {
+        delete state;
+    }
+
+    for (auto state : nfaCopy->states) {
+        delete state;
+    }
+
     delete nfa;
     delete optionalCopy;
+    delete nfaCopy;
 
     return res;
 }

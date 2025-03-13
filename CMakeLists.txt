@@ -48,18 +48,18 @@ add_executable(convert-tests tests/convert-tests.cpp
         tests/utils.h
         tests/utils.cpp
         tests/tests.h
-        src/Automata/NFA.h
-        src/Automata/NFA.cpp
-        src/Regex/regex.cpp
-        src/Regex/regex.h
-        src/Automata/NFAState.h
-        src/Automata/DFA.cpp
-        src/Automata/DFA.h
         src/Automata/DFAState.h
         src/Automata/DFAState.cpp
+        src/Automata/NFAState.h
         src/Automata/NFAState.cpp
-        src/Automata/NFAState.cpp
+        src/Automata/NFA.h
+        src/Automata/NFA.cpp
+        src/Automata/DFA.cpp
+        src/Automata/DFA.h
+        src/Regex/regex.cpp
+        src/Regex/regex.h
 )
+
 add_executable(ilex-tests tests/ilex-tests.cpp
         src/Automata/DFAState.h
         src/Automata/DFAState.cpp

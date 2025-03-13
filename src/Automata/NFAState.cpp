@@ -11,5 +11,4 @@ NFAState::NFAState() {
     matchEnd = false;
     matchStart = false;
     matchStartAndEnd = false;
-    secondaryNfa = nullptr;
 }
