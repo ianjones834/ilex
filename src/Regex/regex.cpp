@@ -12,27 +12,47 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
     stack<char> opStack;
     bool matchStart = false, matchEnd = false, matchStartAndEnd = false;
 
-    if (str[0] == '^') {
-        matchStart = true;
-        str = str.substr(1, str.length() - 1);
-    }
-
-    if (str[str.length() - 1] == '$') {
-        str = str.substr(0, str.length() - 1);
-
-        if (matchStart) {
-            matchStartAndEnd = true;
-            matchStart = false;
-        }
-        else {
-            matchEnd = true;
-        }
-    }
-
     bool newSubExpression = true;
 
     for (int i = 0; i < str.length(); i++) {
         switch (char ch = str[i]) {
+            case '"': {
+                i++;
+
+                while (i < str.length() && str[i] != '"') {
+                    if (nfaStack.empty()) {
+                        nfaStack.push(nfa_new_single_char(str[i]));
+                    }
+                    else {
+                        NFA* nfa = nfaStack.top();
+                        nfaStack.pop();
+                        nfaStack.push(nfa_concat(nfa, nfa_new_single_char(str[i])));
+                    }
+
+                    i++;
+                }
+                i++;
+
+                break;
+            }
+            case '^': {
+                if (isPrimaryNfa && i == 0) {
+                    matchStart = true;
+                }
+
+                break;
+            }
+            case '$': {
+                if (i == str.length() - 1) {
+                    if (matchStart) {
+                        matchStart = false;
+                        matchStartAndEnd = true;
+                    }
+                    else {
+                        matchEnd = true;
+                    }
+                }
+            }
             case '(': {
                 opStack.push(ch);
                 newSubExpression = true;
@@ -169,6 +189,32 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 nfaStack.pop();
                 nfaStack.push(newNfa);
                 i = j + 1;
+                break;
+            }
+            case '/': {
+                if (isPrimaryNfa) {
+                    NFA* secondaryNfa = regex_parse(str.substr(i + 1, str.length() - i - 1), false);
+                    NFA* nfa = nfaStack.top();
+                    nfaStack.pop();
+
+                    for (auto state1 : secondaryNfa->states) {
+                        if (state1->acceptState) {
+                            for (auto state2 : nfa->states) {
+                                if (state2->acceptState) {
+                                    state1->backTo.insert(state2);
+                                }
+                            }
+                        }
+                    }
+
+                    i = str.length();
+                    nfaStack.push(nfa_concat(nfa, secondaryNfa));
+                }
+                else {
+                    NFA* nfa = nfaStack.top();
+                    nfaStack.pop();
+                    nfaStack.push(nfa_concat(nfa, nfa_new_single_char('/')));
+                }
                 break;
             }
             case '\\': {

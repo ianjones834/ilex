@@ -11,4 +11,5 @@ NFAState::NFAState() {
     matchEnd = false;
     matchStart = false;
     matchStartAndEnd = false;
+    curCharIndex = -1;
 }

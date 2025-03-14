@@ -27,7 +27,6 @@ DFA::DFA(NFA* nfa) {
     this->start = new DFAState(start);
     stateMap[start] = this->start;
     this->states.insert(this->start);
-
     while (!nextState.empty()) {
         set<NFAState*> cur = nextState.top();
         nextState.pop();
@@ -41,6 +40,18 @@ DFA::DFA(NFA* nfa) {
                 this->states.insert(newState);
                 stateMap[next] = newState;
                 nextState.push(next);
+
+
+            }
+
+            for (auto state : next) {
+                if (!state->backTo.empty()) {
+                    for (auto back : state->backTo) {
+                        stateMap[next]->backTo.insert(stateMap[epsilon_closure(back)]);
+                    }
+                }
+
+                break;
             }
 
             stateMap[cur]->transitions[ch] = stateMap[next];

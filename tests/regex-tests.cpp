@@ -6,78 +6,67 @@
 #include "../src/Regex/regex.h"
 #include "utils.h"
 
-#define REGEX_TEST_PASS(x,y) \
-{string testName = "Regex ("; testName += (x); testName += ","; testName += (y); testName += ")"; \
+#define COMMA ,
+#define REGEX_TEST_PASS(x,y,z) \
+{string testName = "Regex PASS ("; testName += (x); testName += ","; testName += (y); testName += ", {" + aggregate((z)) + "})"; \
 TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
-    bool res = simulate_nfa(nfa, (y)); \
-    if (!res) cout << *nfa; \
+    unordered_set<string> matches = simulate_nfa(nfa, (y)); \
+    if (matches != (z)) cout << matches << endl << *nfa; \
     for (NFAState* s : nfa->states) delete s; \
     delete nfa; \
-    return res; \
-    })}
-
-#define REGEX_TEST_FAIL(x,y) \
-{string testName = "Regex ("; testName += (x); testName += ", "; testName += (y); testName += ")"; \
-    TEST(testName, []() -> bool { \
-    NFA* nfa = regex_parse((x)); \
-    bool res = simulate_nfa(nfa, (y)); \
-    if (res) cout << *nfa; \
-    for (NFAState* s : nfa->states) delete s; \
-    delete nfa; \
-    return !res; \
+    return matches == (z); \
     })}
 
 int main() {
     INIT_TESTING()
 
-    REGEX_TEST_PASS("a", "a")
-    REGEX_TEST_PASS("b", "b")
-    REGEX_TEST_FAIL("a", "b")
-    REGEX_TEST_PASS("a|b", "a")
-    REGEX_TEST_PASS("a|b", "b")
-    REGEX_TEST_PASS("a|a", "a")
-    REGEX_TEST_PASS("aa", "aa")
-    REGEX_TEST_FAIL("aa", "a")
-    REGEX_TEST_FAIL("aa", "b")
-    REGEX_TEST_PASS("aaa", "aaa")
-    REGEX_TEST_FAIL("aaa", "aa")
-    REGEX_TEST_FAIL("aaa", "a")
-    REGEX_TEST_PASS("a*", "")
-    REGEX_TEST_PASS("a*", "a")
-    REGEX_TEST_PASS("a*", "aa")
-    REGEX_TEST_FAIL("a*", "ab")
-    REGEX_TEST_PASS("a+", "a")
-    REGEX_TEST_FAIL("a+", "")
-    REGEX_TEST_PASS("a+", "aaa")
-    REGEX_TEST_PASS("(a|b)*", "a")
-    REGEX_TEST_PASS("(a|b)*", "b")
-    REGEX_TEST_PASS("(a|b)*", "ab")
-    REGEX_TEST_PASS("(a|b)*", "abab")
-    REGEX_TEST_PASS("(a|b)*", "abba")
-    REGEX_TEST_PASS("(a|b)+", "abba")
-    REGEX_TEST_FAIL("(a|b)+c", "abba")
-    REGEX_TEST_PASS("(a|b)+c", "abbac")
-    REGEX_TEST_FAIL("(a|b)+c", "abbacc")
-    REGEX_TEST_PASS("(a|b)+ca*", "abbacaaaa")
-    REGEX_TEST_PASS("(a|b)+c?", "abba")
-    REGEX_TEST_PASS("((a|b)+)?c?", "")
-    REGEX_TEST_PASS("((a|b)+)?c?", "c")
-    REGEX_TEST_PASS("((a|b)+)?c?", "a")
-    REGEX_TEST_FAIL("((ac|bd)+)?c?", "a")
-    REGEX_TEST_PASS("((ac|bd)+)?c?", "")
-    REGEX_TEST_PASS("((ac|bd)+)?c*?", "c")
-    REGEX_TEST_PASS("((ac|bd)+)?c*?", "ccccc")
-    REGEX_TEST_PASS("((ac|bd)+)?c?*", "ccccc")
-    REGEX_TEST_PASS("((ac|bd)+)?c*?", "")
-    REGEX_TEST_PASS("((ac|bd)+)?c*?", "accc")
-    REGEX_TEST_PASS("[ab]", "a")
-    REGEX_TEST_PASS("[ab]", "b")
-    REGEX_TEST_PASS("[a-c]*", "abc")
-    REGEX_TEST_PASS("[a-c]+", "abc")
-    REGEX_TEST_PASS("[ a-zA-Z0-9]*", "Hello there my name is ianjones834")
-    REGEX_TEST_PASS("[^a-z]*", "HI THERE");
-    REGEX_TEST_FAIL("[^a-z]", "a");
+    REGEX_TEST_PASS("a", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("b", "b", unordered_set<string>{"b"})
+    REGEX_TEST_PASS("a", "b", unordered_set<string>{})
+    REGEX_TEST_PASS("a|b", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("a|b", "b", unordered_set<string>{"b"})
+    REGEX_TEST_PASS("a|a", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("aa", "aa", unordered_set<string>{"aa"})
+    REGEX_TEST_PASS("aa", "a", unordered_set<string>{})
+    REGEX_TEST_PASS("aa", "b", unordered_set<string>{})
+    REGEX_TEST_PASS("aaa", "aaa", unordered_set<string>{"aaa"})
+    REGEX_TEST_PASS("aaa", "aa", unordered_set<string>{})
+    REGEX_TEST_PASS("aaa", "a", unordered_set<string>{})
+    REGEX_TEST_PASS("a*", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("a*", "aa", unordered_set<string>{"a" COMMA "aa"})
+    REGEX_TEST_PASS("a*", "ab", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("a+", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("a+", "aaa", unordered_set<string>{"a" COMMA "aa" COMMA "aaa"})
+    REGEX_TEST_PASS("(a|b)*", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("(a|b)*", "b", unordered_set<string>{"b"})
+    REGEX_TEST_PASS("(a|b)*", "ab", unordered_set<string>{"a" COMMA "ab" COMMA "b"})
+    REGEX_TEST_PASS("(a|b)*", "abab", unordered_set<string>{"a" COMMA "ab" COMMA "aba" COMMA "abab" COMMA "b" COMMA "ba" COMMA "bab"})
+    REGEX_TEST_PASS("(a|b)*", "abba", unordered_set<string>{"a" COMMA "ab" COMMA "abb" COMMA "abba" COMMA "b" COMMA "bb" COMMA "bba" COMMA "ba"})
+    REGEX_TEST_PASS("(a|b)+", "abba", unordered_set<string>{"a" COMMA "ab" COMMA "abb" COMMA "abba" COMMA "b" COMMA "bb" COMMA "bba" COMMA "ba"})
+    REGEX_TEST_PASS("(a|b)+c", "abba", unordered_set<string>{})
+    REGEX_TEST_PASS("(a|b)+c", "abbac", unordered_set<string>{"abbac" COMMA "bbac" COMMA "bac" COMMA "ac"})
+    REGEX_TEST_PASS("(a|b)+c", "abbacc", unordered_set<string>{"abbac" COMMA "bbac" COMMA "bac" COMMA "ac"})
+    REGEX_TEST_PASS("(a|b)+c?", "abba", unordered_set<string>{"a" COMMA "ab" COMMA "abb" COMMA "abba" COMMA "b" COMMA "bb" COMMA "bba" COMMA "ba"})
+    REGEX_TEST_PASS("((a|b)+)?c?", "c", unordered_set<string>{"c"})
+    REGEX_TEST_PASS("((a|b)+)?c?", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("((ac|bd)+)?c?", "a", unordered_set<string>{})
+    REGEX_TEST_PASS("((ac|bd)+)?c*?", "c", unordered_set<string>{"c"})
+    REGEX_TEST_PASS("((ac|bd)+)?c*?", "ccccc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "cccc" COMMA "ccccc"})
+    REGEX_TEST_PASS("((ac|bd)+)?c?*", "ccccc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "cccc" COMMA "ccccc" COMMA "ccccc"})
+    REGEX_TEST_PASS("((ac|bd)+)?c*?", "accc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "ac" COMMA "acc" COMMA "accc"})
+    REGEX_TEST_PASS("[ab]", "a", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("[ab]", "b", unordered_set<string>{"b"})
+    REGEX_TEST_PASS("[a-c]*", "abc", unordered_set<string>{"a" COMMA "ab" COMMA "abc" COMMA "b" COMMA "bc" COMMA "c"})
+    REGEX_TEST_PASS("[a-c]+", "abc", unordered_set<string>{"a" COMMA "ab" COMMA "abc" COMMA "b" COMMA "bc" COMMA "c"})
+    REGEX_TEST_PASS("[ a-zA-Z0-9]*", "a 1", unordered_set<string>{ "a" COMMA "a " COMMA "a 1" COMMA " " COMMA " 1" COMMA "1"})
+    REGEX_TEST_PASS("[^a-z]*", "H", unordered_set<string>{"H"})
+    REGEX_TEST_PASS("[^a-z]", "a", unordered_set<string>{})
+    REGEX_TEST_PASS("^ian$", "ian", unordered_set<string>{"ian"})
+    REGEX_TEST_PASS("^ian$", "abian", unordered_set<string>{})
+    REGEX_TEST_PASS("^ian$", "ianj", unordered_set<string>{})
+    REGEX_TEST_PASS("a/b", "ab", unordered_set<string>{"a"})
+    REGEX_TEST_PASS("ian/jones", "ianjones", unordered_set<string>{"ian"})
 
     START_TESTS()
 }

@@ -16,12 +16,17 @@ struct DFAState {
     int matchStartActionNum;
     int matchEndActionNum;
     int matchStartAndEndActionNum;
+
     bool acceptState;
+    bool matchStart;
+    bool matchEnd;
+    bool matchStartAndEnd;
 
     int curCharIndex;
     unordered_set<DFAState*> backTo;
 
     unordered_map<char, DFAState*> transitions;
+
 
     DFAState();
     DFAState(set<NFAState*>);
