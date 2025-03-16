@@ -40,8 +40,8 @@ int main(int argc, char *argv[]) {
     return ilex(inFile, outFile);
 }
 
-int ilex(istream& in, ostream& out) {
-    int (*funArr[3])(istream&, ostream&) = {&definitionsScanner, &rulesScanner, &subroutinesScanner};
+int ilex(istream& in, ofstream& out) {
+    int (*funArr[3])(istream&, ofstream&) = {&definitionsScanner, &rulesScanner, &subroutinesScanner};
 
     for (auto fun : funArr) {
         switch (fun(in, out)) {
@@ -60,14 +60,14 @@ int ilex(istream& in, ostream& out) {
     return 0;
 }
 
-int definitionsScanner(istream& in, ostream& out) {
+int definitionsScanner(istream& in, ofstream& out) {
     string cur;
-
-    out << "#include<unordered_map>" << endl;
-    out << "#include<unordered_set>" << endl;
-    out << "#include<string>" << endl;
     out << "#include<iostream>" << endl;
-    out << "#include<csignal>" << endl;
+    out << "#include<string>" << endl;
+    out << "#include<unordered_set>" << endl;
+    out << "#include<unordered_map>" << endl;
+    out << "#include<climits>" << endl;
+    out << "using namespace std;" << endl;
 
     while (getline(in, cur)) {
         if (cur == "%%") {
@@ -130,15 +130,11 @@ int definitionsScanner(istream& in, ostream& out) {
 
 
 
-int rulesScanner(istream& in, ostream& out) {
+int rulesScanner(istream& in, ofstream& out) {
     string cur = "";
     int curMachine = 0;
-    int secondaryMachine = 0;
 
     stack<NFA*> nfaStack;
-    unordered_set<int> matchStart;
-    unordered_set<int> matchEnd;
-    unordered_map<int, int> actionToSecondaryMachine;
 
     while (getline(in, cur)) {
         if (cur.empty()) {
@@ -283,24 +279,12 @@ int rulesScanner(istream& in, ostream& out) {
             }
         }
 
-        if (!regex.empty()) {
-            if (regex[0] == '^') {
-                matchStart.insert(curMachine);
-                regex = regex.substr(1, regex.length() - 1);
-            }
-
-            if (regex[regex.length() - 1] == '$') {
-                matchEnd.insert(curMachine);
-                regex = regex.substr(0, regex.length() - 1);
-            }
-        }
-
         if (regexNoAction && !regex.empty()) {
             out << "// " << regex << endl;
             out << "int action" << curMachine << "() {return -1;}" << endl;
         }
 
-        NFA* nfa = regex_parse(regex);
+        NFA* nfa = regex_parse(regex, curMachine);
 
         for (NFAState* state : nfa->states) {
             state->actionNum = curMachine;
@@ -310,11 +294,8 @@ int rulesScanner(istream& in, ostream& out) {
         curMachine++;
     }
 
-    NFA* nfa = regex_parse(".");
+    NFA* nfa = regex_parse(".", curMachine);
 
-    for (NFAState* state : nfa->states) {
-        state->actionNum = curMachine;
-    }
     out << "int action" << curMachine++ << "() {return -1;}" << endl;
     nfaStack.push(nfa);
 
@@ -340,73 +321,120 @@ int rulesScanner(istream& in, ostream& out) {
 
     delete nfaStack.top();
 
-    out << "struct DFAState {\n"
-           "\tint matchStart\n"
-           "\tint matchEnd\n"
-           "\tint matchStartAndEnd\n"
-           "\tint actionNum\n"
-           "\t"
+    out << "struct yy_DFAState {\n"
+        "\tint actionNum;\n"
+        "\tint matchStartActionNum;\n"
+        "\tint matchEndActionNum;\n"
+        "\tint matchStartAndEndActionNum;\n\n"
+        "\tbool acceptState;\n\n"
+        "\tint curCharIndex;\n\n"
+        "\tunordered_set<int> backTo;\n\n"
+        "\tunordered_map<char, int> transitions;\n"
+        "};\n\n";
 
-    out << "struct DFA {" << endl;
-    out << "\t"
+    out << *dfa << endl << endl;
 
-    out << "int yywrap();" << endl;
+    out << "#define ACTION_NUM " << curMachine << endl << endl;
 
-    out << "int yylex() {" << endl;
+    out << "int (*actionArr[ACTION_NUM])() = { ";
 
-
-    if (!dfa_serialize(dfa, out)) {
-        return 2;
+    for (int i = 0; i < curMachine; i++) {
+        out << "&action" << i << ", ";
     }
-    out << string("    std::string input;\n") +
-            "    while (getline(std::cin, input) && _yyKeepReading) {\n" +
-            "        int i = 0;\n" +
-            "        int curStart = 0;\n" +
-            "        while (i < input.length()) {\n" +
-            "            int cur = START;\n" +
-            "            curStart = i;\n" +
-            "            int(*mostRecentAction)() = nullptr;\n" +
-            "            int mostRecentActionLength = -1;\n" +
-            "            while (i < input.length()) {\n" +
-            "                char ch = input[i];\n" +
-            "                if (acceptedStates[cur] && (matchStart[cur] ? curStart == 0 : true) && (matchEnd[cur] ? i == input.length() : true)) {\n" +
-            "                   mostRecentAction = stateToActionMap[cur];\n" +
-            "                   mostRecentActionLength = i;\n" +
-            "                }\n" +
-            "                if (transitions[cur].contains(ch)) {\n" +
-            "                    cur = transitions[cur].at(ch);\n" +
-            "                }\n" +
-            "                else {\n" +
-            "                   break;\n" +
-            "                }\n" +
-            "                i++;\n" +
-            "            }\n" +
-            "            if (acceptedStates[cur] && (matchStart[cur] ? curStart == 0 : true) && (matchEnd[cur] ? i == input.length() : true)) {\n" +
-            "               mostRecentAction = stateToActionMap[cur];\n" +
-            "               mostRecentActionLength = i;\n" +
-            "            }\n" +
-            "            int res = -2;\n" +
-            "            if (mostRecentAction != nullptr) {\n" +
-            "                res = mostRecentAction();\n" +
-            "            }\n" +
-            "            if (res != -2) {\n" +
-            "                i = mostRecentActionLength;\n" +
-            "                continue;\n" +
-            "            }\n" +
-            "            else {\n" +
-            "                break;\n" +
-            "            }\n" +
-            "            return -1;\n" +
-            "        }\n" +
-            "    }\n" +
-            "   return yywrap();\n" +
-            "}\n";
+
+    out << "};" << endl << endl;
+
+    out << "int yy_i;\n"
+        "int yy_match;\n"
+
+        "pair<int, int> _yySimulate(string input, int startIndex = 0) {\n"
+        "    yy_i = startIndex;\n"
+
+        "    for (int start = startIndex; start < input.length();) {\n"
+        "        int stateNum = 0;\n"
+        "        int actionToRun = INT_MAX;\n"
+
+        "        for (yy_i = start; yy_i < input.length(); yy_i++) {\n"
+        "            char ch = input[yy_i];\n"
+
+        "            if (yy_stateArr[stateNum].transitions.contains(ch)) {\n"
+        "                stateNum = yy_stateArr[stateNum].transitions[ch];\n"
+        "                yy_stateArr[stateNum].curCharIndex = yy_i;\n"
+        "            }\n"
+        "            else {\n"
+        "                break;\n"
+        "            }\n"
+
+        "            if (yy_stateArr[stateNum].acceptState) {\n"
+        "                yy_match = yy_i;\n"
+
+        "                if (!yy_stateArr[stateNum].backTo.empty()) {\n"
+        "                    int backToIndex = INT_MIN;\n"
+
+        "                    for (auto backTo : yy_stateArr[stateNum].backTo) {\n"
+        "                        backToIndex = max(backToIndex, yy_stateArr[backTo].curCharIndex);\n"
+        "                    }\n"
+
+        "                    yy_match = backToIndex;\n"
+        "                }\n"
+
+        "                if (yy_stateArr[stateNum].matchStartActionNum != INT_MAX && start == 0) {\n"
+        "                    actionToRun = min(actionToRun, yy_stateArr[stateNum].matchStartActionNum);\n"
+        "                }\n"
+
+        "                if (yy_stateArr[stateNum].matchEndActionNum != INT_MAX && yy_i == input.length() -1) {\n"
+        "                    actionToRun = min(actionToRun, yy_stateArr[stateNum].matchEndActionNum);\n"
+        "                }\n"
+
+        "                if (yy_stateArr[stateNum].matchStartAndEndActionNum != INT_MAX && start == 0 && yy_i == input.length() - 1) {\n"
+        "                    actionToRun = min(actionToRun, yy_stateArr[stateNum].matchStartAndEndActionNum);\n"
+        "                }\n"
+
+        "                actionToRun = min(actionToRun, yy_stateArr[stateNum].actionNum);\n"
+        "            }\n"
+        "        }\n"
+
+        "        if (actionToRun != INT_MAX) {\n"
+        "            int res = actionArr[actionToRun]();\n"
+
+        "            if (res > 0) {\n"
+        "                return {res, yy_i};\n"
+        "            }\n"
+
+        "            start = yy_match + 1;\n"
+        "        }\n"
+        "        else {\n"
+        "            return {0, 0};\n"
+        "        }\n"
+        "    }\n"
+
+        "    return {0, 0};\n"
+        "}\n"
+
+        "int yywrap();\n"
+
+        "int yylex() {\n"
+        "    string input;\n"
+        "    int start = 0;\n"
+
+        "    while (getline(cin, input)) {\n"
+        "        auto res = _yySimulate(input, start);\n"
+
+        "        if (res.first < 0) {\n"
+        "            return -1;\n"
+        "        }\n"
+        "    }\n"
+
+        "    return yywrap();\n"
+        "}\n";
+
+    for (auto state : dfa->states) delete state;
 
     delete dfa;
     return 0;
 }
 
-int subroutinesScanner(istream& in, ostream& out) {
+int subroutinesScanner(istream& in, ofstream& out) {
     string cur;
     while (getline(in, cur)) {
         out << cur << endl;

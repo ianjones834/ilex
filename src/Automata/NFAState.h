@@ -16,6 +16,7 @@ struct NFAState {
     bool matchStart;
     bool matchEnd;
     bool matchStartAndEnd;
+    bool notMatchStartAndNotMatchEnd;
 
     int curCharIndex;
     unordered_set<NFAState*> backTo;

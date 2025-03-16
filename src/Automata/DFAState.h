@@ -5,6 +5,7 @@
 #ifndef DFASTATE_H
 #define DFASTATE_H
 
+#include <fstream>
 #include <unordered_map>
 #include <set>
 
@@ -12,6 +13,8 @@
 using namespace std;
 
 struct DFAState {
+    int stateNum;
+
     int actionNum;
     int matchStartActionNum;
     int matchEndActionNum;
@@ -21,6 +24,7 @@ struct DFAState {
     bool matchStart;
     bool matchEnd;
     bool matchStartAndEnd;
+    bool notMatchStartAndNotMatchEnd;
 
     int curCharIndex;
     unordered_set<DFAState*> backTo;

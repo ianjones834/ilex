@@ -5,9 +5,8 @@
 #ifndef DFA_H
 #define DFA_H
 
-#include <iostream>
-#include <unordered_map>
 #include <unordered_set>
+#include <fstream>
 
 #include "NFA.h"
 #include "DFAState.h"
@@ -20,8 +19,9 @@ struct DFA {
     DFA(NFA*);
 };
 
-ostream& operator<<(ostream& os, const DFA& dfa);
+ostream& operator<<(ostream&, const DFA&);
+ostream& operator<<(ostream&, const DFAState&);
 
-unordered_set<char>* getAlphabet(NFA*);
+unordered_set<char> getAlphabet(NFA*);
 
 #endif //DFA_H

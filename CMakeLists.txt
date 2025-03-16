@@ -65,3 +65,4 @@ add_executable(ilex-tests tests/ilex-tests.cpp
         src/Automata/DFAState.cpp
         src/Automata/NFAState.cpp
 )
+add_executable(ilex.yy.text src/ilex.yy.test.cpp)

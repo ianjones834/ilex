@@ -8,11 +8,10 @@
 #include <iostream>
 using namespace std;
 
-int ilex(istream&, ostream&);
+int ilex(istream&, ofstream&);
 
-int definitionsScanner(istream&, ostream&);
-int rulesScanner(istream&, ostream&);
-int regexScanner(istream&, ostream&);
-int subroutinesScanner(istream&, ostream&);
+int definitionsScanner(istream&, ofstream&);
+int rulesScanner(istream&, ofstream&);
+int subroutinesScanner(istream&, ofstream&);
 
 #endif //ILEX_H

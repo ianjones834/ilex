@@ -53,10 +53,6 @@ ostream& operator<<(ostream& os, const NFA& nfa) {
     return os;
 }
 
-ostream& operator<<(ostream& os, const DFA& dfa) {
-    return os;
-}
-
 ostream& operator<<(ostream& os, const unordered_set<string>& set) {
     if (set.empty()) {
         return os;
@@ -123,7 +119,7 @@ unordered_set<string> simulate_nfa(NFA *nfa, string input) {
                     else if (state->matchStartAndEnd && start == 0 && cur == input.length() - 1) {
                         matches.insert(input.substr(start, matchEnd - start + 1));
                     }
-                    else if (!state->matchStart && !state->matchEnd && !state->matchStartAndEnd) {
+                    else if (state->notMatchStartAndNotMatchEnd) {
                         matches.insert(input.substr(start, matchEnd - start + 1));
                     }
 
@@ -176,7 +172,7 @@ unordered_set<string> simulate_dfa(DFA *dfa, string input) {
                 else if (state->matchStartAndEnd && start == 0 && cur == input.length() - 1) {
                     matches.insert(input.substr(start, matchEnd - start + 1));
                 }
-                else if (!state->matchStart && !state->matchEnd && !state->matchStartAndEnd) {
+                else if (state->notMatchStartAndNotMatchEnd) {
                     matches.insert(input.substr(start, matchEnd - start + 1));
                 }
             }

@@ -7,7 +7,9 @@
 
 #include "regex.h"
 
-NFA* regex_parse(string str, bool isPrimaryNfa) {
+#include <climits>
+
+NFA* regex_parse(string str, int actionNum, bool isPrimaryNfa) {
     stack<NFA*> nfaStack;
     stack<char> opStack;
     bool matchStart = false, matchEnd = false, matchStartAndEnd = false;
@@ -285,6 +287,7 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
             state->matchStart = matchStart;
             state->matchEnd = matchEnd;
             state->matchStartAndEnd = matchStartAndEnd;
+            state->notMatchStartAndNotMatchEnd = !matchStart && !matchEnd && !matchStartAndEnd;
         }
     }
 
