@@ -21,16 +21,6 @@ add_executable(ilex src/main.cpp
         src/Automata/NFAState.cpp
 )
 
-add_executable(nfa-tests tests/nfa-tests.cpp
-        tests/utils/tests.h
-        tests/utils/utils.cpp
-        tests/utils/utils.h
-        src/Automata/NFA.h
-        src/Automata/NFA.cpp
-        src/Automata/NFAState.h
-        src/Automata/NFAState.cpp
-)
-
 add_executable(regex-tests tests/regex-tests.cpp
         tests/utils/tests.h
         tests/utils/utils.cpp

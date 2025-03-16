@@ -8,7 +8,7 @@
 #include <queue>
 #include <unordered_map>
 
-#include "../src/Automata/NFA.h"
+#include "../../src/Automata/NFA.h"
 
 ostream& operator<<(ostream& os, const NFA& nfa) {
     unordered_map<NFAState*, int> stateNumMap;
