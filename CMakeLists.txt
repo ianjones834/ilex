@@ -14,17 +14,17 @@ add_executable(ilex src/main.cpp
         src/Regex/regex.h
         src/Automata/NFAState.h
         src/ilex.h
-        tests/utils.cpp
-        tests/utils.h
+        tests/utils/utils.cpp
+        tests/utils/utils.h
         src/Automata/DFAState.h
         src/Automata/DFAState.cpp
         src/Automata/NFAState.cpp
 )
 
 add_executable(nfa-tests tests/nfa-tests.cpp
-        tests/tests.h
-        tests/utils.cpp
-        tests/utils.h
+        tests/utils/tests.h
+        tests/utils/utils.cpp
+        tests/utils/utils.h
         src/Automata/NFA.h
         src/Automata/NFA.cpp
         src/Automata/NFAState.h
@@ -32,9 +32,9 @@ add_executable(nfa-tests tests/nfa-tests.cpp
 )
 
 add_executable(regex-tests tests/regex-tests.cpp
-        tests/tests.h
-        tests/utils.cpp
-        tests/utils.h
+        tests/utils/tests.h
+        tests/utils/utils.cpp
+        tests/utils/utils.h
         src/Automata/NFA.h
         src/Automata/NFA.cpp
         src/Regex/regex.h
@@ -45,9 +45,9 @@ add_executable(regex-tests tests/regex-tests.cpp
         src/Automata/NFAState.cpp
 )
 add_executable(convert-tests tests/convert-tests.cpp
-        tests/utils.h
-        tests/utils.cpp
-        tests/tests.h
+        tests/utils/utils.h
+        tests/utils/utils.cpp
+        tests/utils/tests.h
         src/Automata/DFAState.h
         src/Automata/DFAState.cpp
         src/Automata/NFAState.h
