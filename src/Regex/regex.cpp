@@ -9,7 +9,7 @@
 
 #include <climits>
 
-NFA* regex_parse(string str, int actionNum, bool isPrimaryNfa) {
+NFA* regex_parse(string str, bool isPrimaryNfa) {
     stack<NFA*> nfaStack;
     stack<char> opStack;
     bool matchStart = false, matchEnd = false, matchStartAndEnd = false;
@@ -116,7 +116,7 @@ NFA* regex_parse(string str, int actionNum, bool isPrimaryNfa) {
                     while (j < str.length() && str[j] != ']') {
                         if (j + 1 < str.length() && str[j + 1] == '-') {
                             if (j + 2 < str.length() && str[j] < str[j + 2]) {
-                                for (char tmpCh = str[j]; tmpCh < str[j + 2]; tmpCh++) {
+                                for (char tmpCh = str[j]; tmpCh <= str[j + 2]; tmpCh++) {
                                     charsToAvoid.insert(tmpCh);
                                 }
 
@@ -199,18 +199,8 @@ NFA* regex_parse(string str, int actionNum, bool isPrimaryNfa) {
                     NFA* nfa = nfaStack.top();
                     nfaStack.pop();
 
-                    for (auto state1 : secondaryNfa->states) {
-                        if (state1->acceptState) {
-                            for (auto state2 : nfa->states) {
-                                if (state2->acceptState) {
-                                    state1->backTo.insert(state2);
-                                }
-                            }
-                        }
-                    }
-
                     i = str.length();
-                    nfaStack.push(nfa_concat(nfa, secondaryNfa));
+                    nfaStack.push(nfa_concat(nfa, secondaryNfa, true));
                 }
                 else {
                     NFA* nfa = nfaStack.top();
@@ -282,12 +272,14 @@ NFA* regex_parse(string str, int actionNum, bool isPrimaryNfa) {
         nfaStack.push(nfa_concat(lhs, rhs));
     }
 
-    for (NFAState* state : nfaStack.top()->states) {
-        if (state->acceptState) {
-            state->matchStart = matchStart;
-            state->matchEnd = matchEnd;
-            state->matchStartAndEnd = matchStartAndEnd;
-            state->notMatchStartAndNotMatchEnd = !matchStart && !matchEnd && !matchStartAndEnd;
+    NFA* nfa = nfaStack.top();
+
+    for (int i = 0; i < nfa->stateNum; i++) {
+        if (nfa->acceptStates[i]) {
+            nfa->matchStart[i] = matchStart;
+            nfa->matchEnd[i] = matchEnd;
+            nfa->matchStartAndEnd[i] = matchStartAndEnd;
+            nfa->notMatchStartAndNotMatchEnd[i] = !matchStart && !matchEnd && !matchStartAndEnd;
         }
     }
 

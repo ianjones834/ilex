@@ -9,6 +9,6 @@
 #include<string>
 using namespace std;
 
-NFA* regex_parse(string, int, bool = true);
+NFA* regex_parse(string, bool = true);
 
 #endif //REGEX_H

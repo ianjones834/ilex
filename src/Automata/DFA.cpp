@@ -4,135 +4,206 @@
 
 #include "DFA.h"
 
+#include <climits>
 #include <map>
 #include <set>
 #include <stack>
 #include <vector>
 
-ostream& operator<<(ostream& os, const DFAState& dfaState) {
-    /*int actionNum;
-    int matchStartActionNum;
-    int matchEndActionNum;
-    int matchStartAndEndActionNum;
-
-    bool acceptState;
-
-    int curCharIndex;
-    unordered_set<int> backTo;
-
-    unordered_map<char, int> transitions;*/
-
-    os << "\t\t .actionNum = " << dfaState.actionNum << "," << endl;
-    os << "\t\t .matchStartActionNum = " << dfaState.matchStartActionNum << "," << endl;
-    os << "\t\t .matchEndActionNum = " << dfaState.matchEndActionNum << "," << endl;
-    os << "\t\t .matchStartAndEndActionNum = " << dfaState.matchStartAndEndActionNum << "," << endl;
-    os << "\t\t .acceptState = " << (dfaState.acceptState ? "true" : "false") << "," << endl;
-    os << "\t\t .curCharIndex = " << -1 << "," << endl;
-    os << "\t\t .backTo = { ";
-
-    for (auto state : dfaState.backTo) {
-        os << state->stateNum << ", ";
+ostream& operator<<(ostream& os, const vector<bool>& booleanVector) {
+    if (booleanVector.empty()) {
+        return os;
     }
 
-    os << "}," << endl;
+    string res = booleanVector[0] ? "true" : "false" ;
 
-    os << "\t\t .transitions = { ";
-    for (auto pair : dfaState.transitions) {
-        os << "{ " << (int) pair.first << ", " << pair.second->stateNum << " },";
+    for (bool boolean : booleanVector) {
+        res += ", " + string(boolean ? "true" : "false");
     }
 
-    os << "}" << endl;
+    os << res;
 
     return os;
 }
 
-ostream& operator<<(ostream& os, const DFA& dfa) {
-    vector<DFAState*> states;
-    stack<DFAState*> stateStack;
-    int stateNum = 0;
-    stateStack.push(dfa.start);
-    states.push_back(dfa.start);
-    dfa.start->stateNum = stateNum++;
-
-    while (!stateStack.empty()) {
-        DFAState* curState = stateStack.top();
-        stateStack.pop();
-
-        for (auto pair : curState->transitions) {
-            if (pair.second->stateNum == -1) {
-                pair.second->stateNum = stateNum++;
-                stateStack.push(pair.second);
-                states.push_back(pair.second);
-            }
-        }
+ostream& operator<<(ostream& os, const vector<int>& intVector) {
+    if (intVector.empty()) {
+        return os;
     }
 
-    os << "#define STATE_NUM " << states.size() << endl << endl;
+    string res = to_string(intVector[0]);
 
-    os << "yy_DFAState yy_stateArr[STATE_NUM] = {\n";
-
-    for (auto state : states) {
-        os << "\t{\n" << *state << "\t},\n";
+    for (int i : intVector) {
+        res += ", " + to_string(i);
     }
 
-    os << "};\n" << endl;
+    os << res;
 
     return os;
+}
+
+ostream& operator<<(ostream& os, const unordered_set<int>& intSet) {
+    if (intSet.empty()) {
+        return os;
+    }
+
+    string res = to_string(*intSet.begin());
+
+    for (auto intPointer = ++intSet.begin(); intPointer != intSet.end(); ++intPointer) {
+        res += ", " + to_string(*intPointer);
+    }
+
+    os << res;
+
+    return os;
+}
+
+ostream& operator<<(ostream& os, const array<int, 128> intArray) {
+    if (intArray.empty()) {
+        return os;
+    }
+
+    string res = to_string(intArray[0]);
+
+    for (int i = 1; i < intArray.size(); i++) {
+        res += ", " + to_string(i);
+    }
+
+    os << res;
+    return os;
+}
+
+ostream& operator<<(ostream& os, const vector<array<int, 128>> arrayVector) {
+    if (arrayVector.empty()) {
+        return os;
+    }
+
+    for (auto arrayElement : arrayVector) {
+        os << "\t{ " << arrayElement << " }," << endl;
+    }
+
+    return os;
+}
+
+ostream& operator<<(ostream& os, const vector<unordered_set<int>> setVector) {
+    if (setVector.empty()) {
+        return os;
+    }
+
+    for (auto set : setVector) {
+        os << "\t{ " << set << " }," << endl;
+    }
+
+    return os;
+}
+
+
+
+ostream& operator<<(ostream& os, const DFA& dfa) {
+    os << "#define STATE_NUM " << dfa.stateNum << endl << endl;
+    os << "bool acceptStates[STATE_NUM] = { " << dfa.acceptStates << " };" << endl;
+
+    os << "int actionNum[STATE_NUM] = { " << dfa.actionNum << " };" << endl;
+    os << "int matchStartActionNum[STATE_NUM] = { " << dfa.matchStartActionNum << " };" << endl;
+    os << "int matchEndActionNum[STATE_NUM] = { " << dfa.matchEndActionNum << " };" << endl;
+    os << "int matchStartAndEndActionNum[STATE_NUM] = { " << dfa.matchStartAndEndActionNum << " };" << endl << endl;
+
+    os << "int curCharIndex[STATE_NUM] = { " << dfa.curCharIndex << " };" << endl << endl;
+
+    os << "int* backTo[STATE_NUM] = {\n" << dfa.backTo << "\n};" << endl << endl;
+    os << "int transitions[STATE_NUM][128] = {\n" << dfa.transitions << "\n};" << endl << endl;
 }
 
 // DFA to NFA Convert
 
 DFA::DFA(NFA* nfa) {
-    map<set<NFAState*>, DFAState*> stateMap;
-    unordered_set<char> alphabet = getAlphabet(nfa);
+    stateNum = 0;
 
-    stack<set<NFAState*>> nextState;
+    map<set<int>, int> stateMap;
+    stack<set<int>> nextStateSet;
 
-    set<NFAState*> start = epsilon_closure(nfa->start);
-    nextState.push(start);
-    this->start = new DFAState(start);
-    stateMap[start] = this->start;
-    this->states.insert(this->start);
-    while (!nextState.empty()) {
-        set<NFAState*> cur = nextState.top();
-        nextState.pop();
+    set<int> start = epsilon_closure(nfa, 0);
+    nextStateSet.push(start);
 
-        for (char ch : alphabet) {
-            set<NFAState*> next = epsilon_closure(move(cur, ch));
+    stateMap[start] = stateNum++;
+
+    acceptStates.push_back(false);
+
+    actionNum.push_back(INT_MAX);
+    matchStartActionNum.push_back(INT_MAX);
+    matchEndActionNum.push_back(INT_MAX);
+    matchStartAndEndActionNum.push_back(INT_MAX);
+
+    curCharIndex.push_back(-1);
+
+    backTo.push_back({});
+    transitions.push_back({});
+    transitions[stateNum - 1].fill(-1);
+
+    for (int state : start) {
+        if (nfa->acceptStates[state]) {
+            acceptStates[0] = true;
+
+            matchStartActionNum[0] = min(matchStartActionNum[0], nfa->matchStart[state] ? nfa->actionNum[state] : INT_MAX);
+            matchEndActionNum[0] = min(matchEndActionNum[0], nfa->matchEnd[state] ? nfa->actionNum[state] : INT_MAX);
+            matchStartAndEndActionNum[0] = min(matchStartAndEndActionNum[0], nfa->matchStartAndEnd[state] ? nfa->actionNum[state] : INT_MAX);
+
+            actionNum[0] = min(actionNum[0], nfa->notMatchStartAndNotMatchEnd[state] ? nfa->actionNum[state] : INT_MAX);
+        }
+    }
+
+    for (int state : start) {
+        for (int back : nfa->backTo[state]) {
+            backTo[0].insert(stateMap[epsilon_closure(nfa, back)]);
+        }
+    }
+
+    while (!nextStateSet.empty()) {
+        set<int> cur = nextStateSet.top();
+        nextStateSet.pop();
+
+        for (int ch = 1; ch < 128; ch++) {
+            set<int> next = epsilon_closure(nfa, (move(nfa, cur, ch)));
 
             if (!stateMap.contains(next)) {
-                DFAState* newState = new DFAState(next);
+                stateMap[next] = stateNum++;
+                nextStateSet.push(next);
 
-                this->states.insert(newState);
-                stateMap[next] = newState;
-                nextState.push(next);
+                acceptStates.push_back(false);
 
+                actionNum.push_back(INT_MAX);
+                matchStartActionNum.push_back(INT_MAX);
+                matchEndActionNum.push_back(INT_MAX);
+                matchStartAndEndActionNum.push_back(INT_MIN);
 
+                curCharIndex.push_back(-1);
+
+                backTo.push_back({});
+                transitions.push_back({});
+                transitions[stateNum - 1].fill(-1);
             }
 
-            for (auto state : next) {
-                if (!state->backTo.empty()) {
-                    for (auto back : state->backTo) {
-                        stateMap[next]->backTo.insert(stateMap[epsilon_closure(back)]);
-                    }
+            int curStateNum = stateMap[next];
+
+            for (int state : next) {
+                if (nfa->acceptStates[state]) {
+                    acceptStates[curStateNum] = true;
+
+                    matchStartActionNum[curStateNum] = min(matchStartActionNum[curStateNum], nfa->matchStart[state] ? nfa->actionNum[state] : INT_MAX);
+                    matchEndActionNum[curStateNum] = min(matchEndActionNum[curStateNum], nfa->matchEnd[state] ? nfa->actionNum[state] : INT_MAX);
+                    matchStartAndEndActionNum[curStateNum] = min(matchStartAndEndActionNum[curStateNum], nfa->matchStartAndEnd[state] ? nfa->actionNum[state] : INT_MAX);
+
+                    actionNum[curStateNum] = min(actionNum[curStateNum], nfa->notMatchStartAndNotMatchEnd[state] ? nfa->actionNum[state] : INT_MAX);
                 }
             }
 
-            stateMap[cur]->transitions[ch] = stateMap[next];
-        }
-    }
-}
-
-unordered_set<char> getAlphabet(NFA* nfa) {
-    unordered_set<char> alphabet;
-
-    for (NFAState* state : nfa->states) {
-        for (const auto& pair : state->transitions) {
-            if (pair.first != 0) {
-                alphabet.insert(pair.first);
+            for (int state : next) {
+                for (int back : nfa->backTo[state]) {
+                    backTo[stateMap[next]].insert(stateMap[epsilon_closure(nfa, back)]);
+                }
             }
+
+            transitions[stateMap[cur]][ch] = stateMap[next];
         }
     }
-
-    return alphabet;
 }

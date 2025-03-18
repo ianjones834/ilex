@@ -12,13 +12,9 @@ add_executable(ilex src/main.cpp
         src/Automata/NFA.h
         src/Regex/regex.cpp
         src/Regex/regex.h
-        src/Automata/NFAState.h
         src/ilex.h
         tests/utils/utils.cpp
         tests/utils/utils.h
-        src/Automata/DFAState.h
-        src/Automata/DFAState.cpp
-        src/Automata/NFAState.cpp
 )
 
 add_executable(regex-tests tests/regex-tests.cpp
@@ -29,19 +25,11 @@ add_executable(regex-tests tests/regex-tests.cpp
         src/Automata/NFA.cpp
         src/Regex/regex.h
         src/Regex/regex.cpp
-        src/Automata/NFAState.h
-        src/Automata/DFAState.h
-        src/Automata/DFAState.cpp
-        src/Automata/NFAState.cpp
 )
 add_executable(convert-tests tests/convert-tests.cpp
         tests/utils/utils.h
         tests/utils/utils.cpp
         tests/utils/tests.h
-        src/Automata/DFAState.h
-        src/Automata/DFAState.cpp
-        src/Automata/NFAState.h
-        src/Automata/NFAState.cpp
         src/Automata/NFA.h
         src/Automata/NFA.cpp
         src/Automata/DFA.cpp
@@ -51,8 +39,6 @@ add_executable(convert-tests tests/convert-tests.cpp
 )
 
 add_executable(ilex-tests tests/ilex-tests.cpp
-        src/Automata/DFAState.h
-        src/Automata/DFAState.cpp
-        src/Automata/NFAState.cpp
 )
+
 add_executable(ilex.yy.text src/ilex.yy.test.cpp)

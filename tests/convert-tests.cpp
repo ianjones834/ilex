@@ -2,21 +2,20 @@
 // Created by ian on 1/20/25.
 //
 
-#include "tests.h"
+#include "utils/tests.h"
 #include "../src/Regex/regex.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 #define COMMA ,
 #define CONVERT_TEST_PASS(x,y,z) \
 {string testName = "CONVERT PASS ("; testName += (x); testName += ","; testName += (y); testName += ", {" + aggregate((z)) + "})"; \
 TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
+    for (int i = 0; i < nfa->stateNum; i++) if (nfa->acceptStates[i]) nfa->actionNum[i] = 0; \
     DFA* dfa = new DFA(nfa); \
-    for (NFAState* s : nfa->states) delete s; \
     delete nfa; \
     unordered_set<string> matches = simulate_dfa(dfa, (y)); \
-    if (matches != (z)) cout << matches << endl << *dfa; \
-    for (DFAState* s : dfa->states) delete s; \
+    if (matches != (z)) cout << matches << endl; \
     delete dfa; \
     return matches == (z); \
     })}
@@ -56,7 +55,7 @@ int main() {
     CONVERT_TEST_PASS("((ac|bd)+)?c?", "a", unordered_set<string>{})
     CONVERT_TEST_PASS("((ac|bd)+)?c*?", "c", unordered_set<string>{"c"})
     CONVERT_TEST_PASS("((ac|bd)+)?c*?", "ccccc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "cccc" COMMA "ccccc"})
-    CONVERT_TEST_PASS("((ac|bd)+)?c?*", "ccccc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "cccc" COMMA "ccccc" COMMA "ccccc"})
+    CONVERT_TEST_PASS("((ac|bd)+)?c?*", "ccccc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "cccc" COMMA "ccccc"})
     CONVERT_TEST_PASS("((ac|bd)+)?c*?", "accc", unordered_set<string>{"c" COMMA "cc" COMMA "ccc" COMMA "ac" COMMA "acc" COMMA "accc"})
     CONVERT_TEST_PASS("[ab]", "a", unordered_set<string>{"a"})
     CONVERT_TEST_PASS("[ab]", "b", unordered_set<string>{"b"})

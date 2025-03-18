@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stack>
 #include <regex>
+#include <unordered_map>
 
 #include "Automata/DFA.h"
 #include "Regex/regex.h"
@@ -286,8 +287,10 @@ int rulesScanner(istream& in, ofstream& out) {
 
         NFA* nfa = regex_parse(regex, curMachine);
 
-        for (NFAState* state : nfa->states) {
-            state->actionNum = curMachine;
+        for (int state = 0; state < nfa->stateNum; state++) {
+            if (nfa->acceptStates[state]) {
+                nfa->actionNum[state] = curMachine;
+            }
         }
 
         nfaStack.push(nfa);
@@ -316,8 +319,6 @@ int rulesScanner(istream& in, ofstream& out) {
     else {
         return 2;
     }
-
-    for (NFAState* s : nfaStack.top() -> states) delete s;
 
     delete nfaStack.top();
 
@@ -427,8 +428,6 @@ int rulesScanner(istream& in, ofstream& out) {
 
         "    return yywrap();\n"
         "}\n";
-
-    for (auto state : dfa->states) delete state;
 
     delete dfa;
     return 0;

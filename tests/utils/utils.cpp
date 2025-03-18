@@ -4,6 +4,7 @@
 
 #include "utils.h"
 
+#include <charconv>
 #include <limits.h>
 #include <queue>
 #include <unordered_map>
@@ -11,44 +12,25 @@
 #include "../../src/Automata/NFA.h"
 
 ostream& operator<<(ostream& os, const NFA& nfa) {
-    unordered_map<NFAState*, int> stateNumMap;
-
-    stateNumMap.clear();
-    queue<NFAState*> stateQueue;
-    int stateNum = 0;
-
-    stateQueue.push(nfa.start);
-    stateNumMap[nfa.start] = stateNum++;
-
-    while (!stateQueue.empty()) {
-        int curLevel = stateQueue.size();
-
-        while (curLevel--) {
-            NFAState* curState = stateQueue.front();
-            stateQueue.pop();
-
-            for (const auto& pair : curState->transitions) {
-                for (NFAState* next : pair.second) {
-                    if (!stateNumMap.contains(next)) {
-                        stateNumMap[next] = stateNum++;
-                        stateQueue.push(next);
-                    }
-                }
-            }
-        }
-    }
-
-    for (auto pair : stateNumMap) {
-        os << "State: " << pair.second << (pair.first->acceptState ? " (Accepting) " : "") << " Transitions: " << endl;
-
-        for (const auto& transitionPair : pair.first->transitions) {
-            for (NFAState* cur : transitionPair.second) {
-                os << "\t" << transitionPair.first << " -> " << stateNumMap[cur] << endl;
-            }
-        }
-    }
-
-    os << endl;
+    // for (int i = 0; i < nfa.stateNum; i++) {
+    //     os << "State";
+    //
+    //     if (nfa.acceptStates[i]) {
+    //         os << " (Accepting State)";
+    //     }
+    //
+    //     os << ":" << i;
+    //
+    //     for (int j = 0; j < 128; j++) {
+    //         os << "\t" << to_string(j) << " -> ";
+    //
+    //         for (int k : nfa.transitions[i][j]) {
+    //             os << to_string(k) + " ";
+    //         }
+    //
+    //         os << endl;
+    //     }
+    // }
 
     return os;
 }
@@ -88,38 +70,38 @@ unordered_set<string> simulate_nfa(NFA *nfa, string input) {
     unordered_set<string> matches;
 
     for (int start = 0; start < input.length(); start++) {
-        set<NFAState*> stateSet = epsilon_closure(nfa->start);
+        set<int> stateSet = epsilon_closure(nfa, 0);
 
         for (int cur = start; cur < input.length(); cur++) {
             char ch = input[cur];
-            stateSet = epsilon_closure(move(stateSet, ch));
+            stateSet = epsilon_closure(nfa, move(nfa, stateSet, ch));
 
-            for (NFAState* state : stateSet) {
-                state->curCharIndex = cur;
+            for (int state : stateSet) {
+                nfa->curCharIndex[state] = cur;
 
-                if (state->acceptState) {
+                if (nfa->acceptStates[state]) {
                     int matchEnd = cur;
 
-                    if (!state->backTo.empty()) {
+                    if (!nfa->backTo[state].empty()) {
                         int backToIndex = INT_MIN;
 
-                        for (NFAState* backTo : state->backTo) {
-                            backToIndex = max(backToIndex, backTo->curCharIndex);
+                        for (int backTo : nfa->backTo[state]) {
+                            backToIndex = max(backToIndex, nfa->curCharIndex[backTo]);
                         }
 
                         matchEnd = backToIndex;
                     }
 
-                    if (state->matchStart && start == 0) {
+                    if (nfa->matchStart[state] && start == 0) {
                         matches.insert(input.substr(start, matchEnd - start + 1));
                     }
-                    else if (state->matchEnd && cur == input.length() - 1) {
+                    else if (nfa->matchEnd[state] && cur == input.length() - 1) {
                         matches.insert(input.substr(start, matchEnd - start + 1));
                     }
-                    else if (state->matchStartAndEnd && start == 0 && cur == input.length() - 1) {
+                    else if (nfa->matchStartAndEnd[state] && start == 0 && cur == input.length() - 1) {
                         matches.insert(input.substr(start, matchEnd - start + 1));
                     }
-                    else if (state->notMatchStartAndNotMatchEnd) {
+                    else if (nfa->notMatchStartAndNotMatchEnd[state]) {
                         matches.insert(input.substr(start, matchEnd - start + 1));
                     }
 
@@ -137,42 +119,42 @@ unordered_set<string> simulate_dfa(DFA *dfa, string input) {
     unordered_set<string> matches;
 
     for (int start = 0; start < input.length(); start++) {
-        DFAState* state = dfa->start;
+        int state = 0;
 
         for (int cur = start; cur < input.length(); cur++) {
             char ch = input[cur];
 
-            if (state->transitions.contains(ch)) {
-                state = state->transitions[ch];
-                state->curCharIndex = cur;
+            if (dfa->transitions[state][ch] >= 0) {
+                state = dfa->transitions[state][ch];
+                dfa->curCharIndex[state] = cur;
             }
             else {
                 break;
             }
 
-            if (state->acceptState) {
+            if (dfa->acceptStates[state]) {
                 int matchEnd = cur;
 
-                if (!state->backTo.empty()) {
+                if (!dfa->backTo[state].empty()) {
                     int backToIndex = INT_MIN;
 
-                    for (auto backTo : state->backTo) {
-                        backToIndex = max(backToIndex, backTo->curCharIndex);
+                    for (auto backTo : dfa->backTo[state]) {
+                        backToIndex = max(backToIndex, dfa->curCharIndex[backTo]);
                     }
 
                     matchEnd = backToIndex;
                 }
 
-                if (state->matchStart && start == 0) {
+                if (dfa->matchStartActionNum[state] != INT_MAX && start == 0) {
                     matches.insert(input.substr(start, matchEnd - start + 1));
                 }
-                else if (state->matchEnd && cur == input.length() - 1) {
+                else if (dfa->matchEndActionNum[state] != INT_MAX && cur == input.length() - 1) {
                     matches.insert(input.substr(start, matchEnd - start + 1));
                 }
-                else if (state->matchStartAndEnd && start == 0 && cur == input.length() - 1) {
+                else if (dfa->matchStartAndEndActionNum[state] != INT_MAX && start == 0 && cur == input.length() - 1) {
                     matches.insert(input.substr(start, matchEnd - start + 1));
                 }
-                else if (state->notMatchStartAndNotMatchEnd) {
+                else if (dfa->actionNum[state] != INT_MAX) {
                     matches.insert(input.substr(start, matchEnd - start + 1));
                 }
             }

@@ -2,9 +2,9 @@
 // Created by ian on 1/14/25.
 //
 
-#include "tests.h"
+#include "utils/tests.h"
 #include "../src/Regex/regex.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 #define COMMA ,
 #define REGEX_TEST_PASS(x,y,z) \
@@ -12,8 +12,7 @@
 TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
     unordered_set<string> matches = simulate_nfa(nfa, (y)); \
-    if (matches != (z)) cout << matches << endl << *nfa; \
-    for (NFAState* s : nfa->states) delete s; \
+    if (matches != (z)) cout << matches << endl; \
     delete nfa; \
     return matches == (z); \
     })}

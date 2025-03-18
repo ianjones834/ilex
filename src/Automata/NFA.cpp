@@ -3,87 +3,94 @@
 //
 
 #include "NFA.h"
+
+#include <climits>
 #include <queue>
 #include <stack>
-#include <stdexcept>
 #include <unordered_set>
 
-NFA *nfa_copy(NFA *nfa1) {
-    NFA* nfa = new NFA;
+NFA::NFA(const int num) {
+    stateNum = num;
 
-    unordered_map<NFAState*, NFAState*> oldToNewStates;
-    queue<NFAState*> stateQueue;
+    acceptStates = vector(num, false);
 
-    nfa->start = new NFAState;
-    nfa->start->acceptState = nfa1->start->acceptState;
-    nfa->states.insert(nfa->start);
+    actionNum = vector(num, INT_MAX);
 
-    stateQueue.push(nfa1->start);
+    matchStart = vector(num, false);
+    matchEnd = vector(num, false);
+    matchStartAndEnd = vector(num, false);
+    notMatchStartAndNotMatchEnd = vector(num, false);
 
-    oldToNewStates.emplace(nfa1->start, nfa->start);
+    curCharIndex = vector(num, -1);
 
-    while (!stateQueue.empty()) {
-        int curLevelSize = stateQueue.size();
+    backTo = vector<unordered_set<int>>(num);
 
-        while (curLevelSize--) {
-            NFAState* cur = stateQueue.front();
-            stateQueue.pop();
+    transitions = vector<array<unordered_set<int>, 128>>(num);
+}
 
-            for (auto pair : cur->transitions) {
-                for (NFAState* state : pair.second) {
-                    if (!oldToNewStates.contains(state)) {
-                        NFAState* newState = new NFAState;
-                        newState->acceptState = state->acceptState;
+NFA* nfa_new_single_char(const char ch) {
+    auto nfa = new NFA(2);
 
-                        oldToNewStates[state] = newState;
-                        oldToNewStates[cur]->transitions[pair.first].insert(newState);
+    nfa->transitions[0][ch].insert(1);
+    nfa->acceptStates[1] = true;
 
-                        nfa->states.insert(newState);
+    return nfa;
+}
 
-                        stateQueue.push(state);
-                    }
-                    else {
-                        oldToNewStates[cur]->transitions[pair.first].insert(oldToNewStates[state]);
-                    }
-                }
+NFA* nfa_union(NFA* nfa1, NFA* nfa2, bool forRules) {
+    NFA* nfa = new NFA(nfa1->stateNum + nfa2->stateNum + 1);
+
+    nfa->transitions[0][0].insert({1, nfa1->stateNum + 1});
+
+    for (int i = 0; i < nfa1->stateNum; i++) {
+        if (nfa1->acceptStates[i]) {
+            nfa->acceptStates[i + 1] = true;
+        }
+
+        for (int j = 0; j < 128; j++) {
+            for (int k : nfa1->transitions[i][j]) {
+                nfa->transitions[i + 1][j].insert(k + 1);
+            }
+        }
+
+        if (forRules) {
+            nfa->actionNum[i + 1] = nfa1->actionNum[i];
+
+            nfa->matchStart[i + 1] = nfa1->matchStart[i];
+            nfa->matchEnd[i + 1] = nfa1->matchEnd[i];
+            nfa->matchStartAndEnd[i + 1] = nfa1->matchStartAndEnd[i];
+            nfa->notMatchStartAndNotMatchEnd[i + 1] = nfa1->notMatchStartAndNotMatchEnd[i];
+
+            for (int k : nfa1->backTo[i]) {
+                nfa->backTo[i + 1].insert(k + 1);
             }
         }
     }
 
-    return nfa;
-}
+    for (int i = 0; i < nfa2->stateNum; i++) {
+        if (nfa2->acceptStates[i]) {
+            nfa->acceptStates[i + nfa1->stateNum + 1] = true;
+        }
 
+        for (int j = 0; j < 128; j++) {
+            for (int k : nfa2->transitions[i][j]) {
+                nfa->transitions[i + nfa1->stateNum + 1][j].insert(k + nfa1->stateNum + 1);
+            }
+        }
 
-NFA* nfa_new_single_char(const char ch) {
-    NFA* nfa = new NFA;
+        if (forRules) {
+            nfa->actionNum[i + nfa1->stateNum +1] = nfa2->actionNum[i];
 
-    NFAState* start = new NFAState;
-    NFAState* end = new NFAState;
+            nfa->matchStart[i + nfa1->stateNum + 1] = nfa2->matchStart[i];
+            nfa->matchEnd[i + nfa1->stateNum + 1] = nfa2->matchEnd[i];
+            nfa->matchStartAndEnd[i + nfa1->stateNum + 1] = nfa2->matchStartAndEnd[i];
+            nfa->notMatchStartAndNotMatchEnd[i + nfa1->stateNum + 1] = nfa2->notMatchStartAndNotMatchEnd[i];
 
-    end->acceptState = true;
-    start->transitions[ch] = unordered_set<NFAState*>{end};
-
-    nfa->start = start;
-    nfa->start->acceptState = false;
-
-    nfa->states.insert(start);
-    nfa->states.insert(end);
-
-    return nfa;
-}
-
-NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
-    NFA* nfa = new NFA;
-
-    nfa->start = new NFAState;
-    nfa->start->acceptState = false;
-
-    nfa->states.insert(nfa->start);
-
-    nfa->start->transitions[0] = unordered_set<NFAState*>{nfa1->start, nfa2->start};
-
-    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
-    nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
+            for (int k : nfa2->backTo[i]) {
+                nfa->backTo[i + nfa1->stateNum + 1].insert(k + nfa1->stateNum + 1);
+            }
+        }
+    }
 
     delete nfa1;
     delete nfa2;
@@ -91,18 +98,38 @@ NFA* nfa_union(NFA* nfa1, NFA* nfa2) {
     return nfa;
 }
 
-NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
-    NFA* nfa = new NFA;
+NFA *nfa_concat(NFA *nfa1, NFA *nfa2, bool backTo) {
+    NFA* nfa = new NFA(nfa1->stateNum + nfa2->stateNum);
 
-    nfa->start = nfa1->start;
+    for (int i = 0; i < nfa1->stateNum; i++) {
+        for (int j = 0; j < 128; j++) {
+                nfa->transitions[i][j] = nfa1->transitions[i][j];
+        }
 
-    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
-    nfa->states.insert(nfa2->states.begin(), nfa2->states.end());
+        if (nfa1->acceptStates[i]) {
+            nfa->transitions[i][0].insert(nfa1->stateNum);
+        }
+    }
 
-    for (NFAState* state : nfa1->states) {
-        if (state->acceptState) {
-            state->acceptState = false;
-            state->transitions[0].insert(nfa2->start);
+    for (int i = 0; i < nfa2->stateNum; i++) {
+        for (int j = 0; j < 128; j++) {
+            for (int k : nfa2->transitions[i][j]) {
+                nfa->transitions[i + nfa1->stateNum][j].insert(k + nfa1->stateNum);
+            }
+        }
+
+        if (backTo) {
+            if (nfa2->acceptStates[i]) {
+                for (int k = 0; k < nfa1->stateNum; k++) {
+                    if (nfa1->acceptStates[k]) {
+                        nfa->backTo[i + nfa1->stateNum].insert(k);
+                    }
+                }
+            }
+        }
+
+        if (nfa2->acceptStates[i]) {
+            nfa->acceptStates[i + nfa1->stateNum] = true;
         }
     }
 
@@ -113,19 +140,21 @@ NFA *nfa_concat(NFA *nfa1, NFA *nfa2) {
 }
 
 NFA *nfa_zero_or_more(const NFA *nfa1) {
-    NFA *nfa = new NFA;
+    NFA *nfa = new NFA(nfa1->stateNum + 1);
 
-    nfa->start = new NFAState;
+    nfa->transitions[0][0].insert(1);
+    nfa->acceptStates[0] = true;
 
-    nfa->start->acceptState = true;
-    nfa->start->transitions[0] = unordered_set<NFAState*>{nfa1->start};
+    for (int i = 0; i < nfa1->stateNum; i++) {
+        for (int j = 0; j < 128; j++) {
+            for (int k : nfa1->transitions[i][j]) {
+                nfa->transitions[i + 1][j].insert(k + 1);
+            }
+        }
 
-    nfa->states.insert(nfa->start);
-    nfa->states.insert(nfa1->states.begin(), nfa1->states.end());
-
-    for (NFAState* state : nfa1->states) {
-        if (state->acceptState) {
-            state->transitions[0].insert(nfa->start);
+        if (nfa1->acceptStates[i]) {
+            nfa->acceptStates[i + 1] = true;
+            nfa->transitions[i + 1][0].insert(0);
         }
     }
 
@@ -135,64 +164,56 @@ NFA *nfa_zero_or_more(const NFA *nfa1) {
 }
 
 NFA *nfa_one_or_more(NFA *nfa1) {
-    NFA* nfaCopy = nfa_copy(nfa1);
+    NFA* nfaCopy = new NFA(*nfa1);
 
     return nfa_concat(nfaCopy, nfa_zero_or_more(nfa1));
 }
 
 NFA *nfa_optional(NFA *nfa) {
-    NFA* nfaRes = nfa_copy(nfa);
+    NFA* nfaRes = new NFA(*nfa);
 
-    for (NFAState* state : nfaRes->states) {
-        if (state->acceptState) {
-            nfaRes->start->transitions[0].insert(state);
+    for (int i = 0; i < nfaRes->stateNum; i++) {
+        if (nfaRes->acceptStates[i]) {
+            nfaRes->transitions[0][0].insert(i);
         }
     }
-
-    for (auto state : nfa->states) delete state;
 
     delete nfa;
     return nfaRes;
 }
 
 NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> charRangeSet) {
-    NFA* nfa = new NFA;
-    nfa->start = new NFAState;
-    nfa->states.insert(nfa->start);
+    NFA* nfa = nullptr;
 
-    for (char ch : charSet) {
-        NFAState* newState = new NFAState;
-        NFAState* acceptingState = new NFAState;
+    if (!charSet.empty()) {
+        nfa = nfa_new_single_char(*charSet.begin());
 
-        newState->transitions[ch].insert(acceptingState);
-        acceptingState->acceptState = true;
+        for (auto chPointer = ++charSet.begin(); chPointer != charSet.end(); chPointer++) {
+            nfa = nfa_union(nfa, nfa_new_single_char(*chPointer));
+        }
 
-        nfa->start->transitions[0].insert(newState);
+        for (auto pair : charRangeSet) {
+            char start = pair->first, end = pair->second;
 
-        nfa->states.insert(newState);
-        nfa->states.insert(acceptingState);
+            for (char ch = start; start <= ch && ch <= end; ch++) {
+                nfa = nfa_union(nfa, nfa_new_single_char(ch));
+            }
+
+            delete pair;
+        }
     }
+    else if (!charRangeSet.empty()) {
+        nfa = nfa_new_single_char((*charRangeSet.begin())->first++);
 
-    for (auto pair : charRangeSet) {
-        char start = pair->first, end = pair->second;
+        for (auto pair : charRangeSet) {
+            char start = pair->first, end = pair->second;
 
-        if (start > end) {
-            throw std::invalid_argument("[end must be less than start]");
+            for (char ch = start; start <= ch && ch <= end; ch++) {
+                nfa = nfa_union(nfa, nfa_new_single_char(ch));
+            }
+
+            delete pair;
         }
-
-        for (char ch = start; start <= ch && ch <= end; ch++) {
-            NFAState* newState = new NFAState;
-            NFAState* acceptingState = new NFAState;
-
-            acceptingState->acceptState = true;
-            newState->transitions[ch] = unordered_set<NFAState*>{acceptingState};
-
-            nfa->start->transitions[0].insert(newState);
-            nfa->states.insert(newState);
-            nfa->states.insert(acceptingState);
-        }
-
-        delete pair;
     }
 
     return nfa;
@@ -211,42 +232,30 @@ NFA *nfa_notInRange(unordered_set<char> notAccepted) {
         }
     }
 
-    return nfa_range(charSet, unordered_set<pair<char, char>*>{});
+    return nfa_range(charSet, {});
 }
 
 NFA *nfa_repeat(NFA* nfa, int left, int right) {
-    NFA* nfaCopy = nfa_copy(nfa);
+    NFA* nfaCopy = new NFA(*nfa);
     NFA* res;
 
     if (left > 0) {
-        res = nfa_copy(nfa);
+        res = new NFA(*nfa);
     }
     else {
-        res = nfa_optional(nfa_copy(nfa));
+        res = nfa_optional(new NFA(*nfa));
     }
 
     for (int i = 1; i < left; i++) {
-        NFA* tmp = nfa_copy(nfaCopy);
+        NFA* tmp = new NFA(*nfaCopy);
         res = nfa_concat(res, tmp);
     }
 
-    NFA* optionalCopy = nfa_optional(nfa_copy(nfaCopy));
+    NFA* optionalCopy = nfa_optional(new NFA(*nfaCopy));
 
     for (int i = left; i < right; i++) {
-        NFA* tmp = nfa_copy(optionalCopy);
+        NFA* tmp = new NFA(*optionalCopy);
         res = nfa_concat(res, tmp);
-    }
-
-    for (auto state : nfa->states) {
-        delete state;
-    }
-
-    for (auto state : optionalCopy->states) {
-        delete state;
-    }
-
-    for (auto state : nfaCopy->states) {
-        delete state;
     }
 
     delete nfa;
@@ -257,18 +266,17 @@ NFA *nfa_repeat(NFA* nfa, int left, int right) {
 }
 
 
-set<NFAState*> epsilon_closure(NFAState* s) {
-    set<NFAState*> res;
-    stack<NFAState*> toSearch;
+set<int> epsilon_closure(NFA* nfa, int s) {
+    set<int> res = {s};
+    stack<int> toSearch;
 
-    res.insert(s);
     toSearch.push(s);
 
     while (!toSearch.empty()) {
-        NFAState* cur = toSearch.top();
+        int cur = toSearch.top();
         toSearch.pop();
 
-        for (NFAState* state : cur->transitions[0]) {
+        for (int state : nfa->transitions[cur][0]) {
             if (!res.contains(state)) {
                 res.insert(state);
                 toSearch.push(state);
@@ -279,20 +287,19 @@ set<NFAState*> epsilon_closure(NFAState* s) {
     return res;
 }
 
-set<NFAState*> epsilon_closure(set<NFAState*> stateSet) {
-    set<NFAState*> res;
-    stack<NFAState*> toSearch;
+set<int> epsilon_closure(NFA* nfa, set<int> stateSet) {
+    set<int> res = stateSet;
+    stack<int> toSearch;
 
-    for (NFAState* i : stateSet) {
+    for (int i : stateSet) {
         toSearch.push(i);
-        res.insert(i);
     }
 
     while (!toSearch.empty()) {
-        NFAState* cur = toSearch.top();
+        int cur = toSearch.top();
         toSearch.pop();
 
-        for (NFAState* state : cur->transitions[0]) {
+        for (int state : nfa->transitions[cur][0]) {
             if (!res.contains(state)) {
                 res.insert(state);
                 toSearch.push(state);
@@ -303,11 +310,11 @@ set<NFAState*> epsilon_closure(set<NFAState*> stateSet) {
     return res;
 }
 
-set<NFAState*> move(set<NFAState*> T, char ch) {
-    set<NFAState*> res;
+set<int> move(NFA* nfa, set<int> stateSet, char ch) {
+    set<int> res;
 
-    for (NFAState* cur : T) {
-        for (NFAState* state : cur->transitions[ch]) {
+    for (int cur : stateSet) {
+        for (int state : nfa->transitions[cur][ch]) {
             res.insert(state);
         }
     }

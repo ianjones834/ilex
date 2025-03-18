@@ -9,19 +9,29 @@
 #include <fstream>
 
 #include "NFA.h"
-#include "DFAState.h"
 using namespace std;
 
 struct DFA {
-    DFAState* start;
-    unordered_set<DFAState*> states;
+    // DFAState* start;
+    // unordered_set<DFAState*> states;
+
+    int stateNum;
+
+    vector<bool> acceptStates;
+
+    vector<int> actionNum;
+    vector<int> matchStartActionNum;
+    vector<int> matchEndActionNum;
+    vector<int> matchStartAndEndActionNum;
+
+    vector<int> curCharIndex;
+
+    vector<unordered_set<int>> backTo;
+    vector<array<int, 128>> transitions;
 
     DFA(NFA*);
 };
 
 ostream& operator<<(ostream&, const DFA&);
-ostream& operator<<(ostream&, const DFAState&);
-
-unordered_set<char> getAlphabet(NFA*);
 
 #endif //DFA_H
