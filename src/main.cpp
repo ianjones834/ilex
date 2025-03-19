@@ -297,41 +297,27 @@ int rulesScanner(istream& in, ofstream& out) {
         curMachine++;
     }
 
-    NFA* nfa = regex_parse(".", curMachine);
+    NFA* nfaAnyCharacter = regex_parse(".", curMachine);
 
     out << "int action" << curMachine++ << "() {return -1;}" << endl;
-    nfaStack.push(nfa);
+    nfaStack.push(nfaAnyCharacter);
 
-    while (nfaStack.size() > 1) {
-        NFA* nfa1 = nfaStack.top();
-        nfaStack.pop();
-        NFA* nfa2 = nfaStack.top();
-        nfaStack.pop();
+    vector<NFA*> nfaArr;
 
-        nfaStack.push(nfa_union(nfa1, nfa2));
-    }
-
-    DFA* dfa;
-
-    if (!nfaStack.empty()) {
-        dfa = new DFA(nfaStack.top());
-    }
-    else {
+    if (nfaStack.empty()) {
         return 2;
     }
 
-    delete nfaStack.top();
+    while (!nfaStack.empty()) {
+        nfaArr.push_back(nfaStack.top());
+        nfaStack.pop();
+    }
 
-    out << "struct yy_DFAState {\n"
-        "\tint actionNum;\n"
-        "\tint matchStartActionNum;\n"
-        "\tint matchEndActionNum;\n"
-        "\tint matchStartAndEndActionNum;\n\n"
-        "\tbool acceptState;\n\n"
-        "\tint curCharIndex;\n\n"
-        "\tunordered_set<int> backTo;\n\n"
-        "\tunordered_map<char, int> transitions;\n"
-        "};\n\n";
+    NFA* nfa = nfa_nUnion(nfaArr, true);
+
+    DFA* dfa = new DFA(nfa);
+
+    delete nfa;
 
     out << *dfa << endl << endl;
 
@@ -358,40 +344,40 @@ int rulesScanner(istream& in, ofstream& out) {
         "        for (yy_i = start; yy_i < input.length(); yy_i++) {\n"
         "            char ch = input[yy_i];\n"
 
-        "            if (yy_stateArr[stateNum].transitions.contains(ch)) {\n"
-        "                stateNum = yy_stateArr[stateNum].transitions[ch];\n"
-        "                yy_stateArr[stateNum].curCharIndex = yy_i;\n"
+        "            if (transitions[stateNum][ch] != -1) {\n"
+        "                stateNum = transitions[stateNum][ch];\n"
+        "                curCharIndex[stateNum] = yy_i;\n"
         "            }\n"
         "            else {\n"
         "                break;\n"
         "            }\n"
 
-        "            if (yy_stateArr[stateNum].acceptState) {\n"
+        "            if (acceptStates[stateNum]) {\n"
         "                yy_match = yy_i;\n"
 
-        "                if (!yy_stateArr[stateNum].backTo.empty()) {\n"
+        "                if (!backTo[stateNum].empty()) {\n"
         "                    int backToIndex = INT_MIN;\n"
 
-        "                    for (auto backTo : yy_stateArr[stateNum].backTo) {\n"
-        "                        backToIndex = max(backToIndex, yy_stateArr[backTo].curCharIndex);\n"
+        "                    for (auto backTo : backTo[stateNum]) {\n"
+        "                        backToIndex = max(backToIndex, curCharIndex[backTo]);\n"
         "                    }\n"
 
         "                    yy_match = backToIndex;\n"
         "                }\n"
 
-        "                if (yy_stateArr[stateNum].matchStartActionNum != INT_MAX && start == 0) {\n"
-        "                    actionToRun = min(actionToRun, yy_stateArr[stateNum].matchStartActionNum);\n"
+        "                if (matchStartActionNum[stateNum] != INT_MAX && start == 0) {\n"
+        "                    actionToRun = min(actionToRun, matchStartActionNum[stateNum]);\n"
         "                }\n"
 
-        "                if (yy_stateArr[stateNum].matchEndActionNum != INT_MAX && yy_i == input.length() -1) {\n"
-        "                    actionToRun = min(actionToRun, yy_stateArr[stateNum].matchEndActionNum);\n"
+        "                if (matchEndActionNum[stateNum] != INT_MAX && yy_i == input.length() -1) {\n"
+        "                    actionToRun = min(actionToRun, matchEndActionNum[stateNum]);\n"
         "                }\n"
 
-        "                if (yy_stateArr[stateNum].matchStartAndEndActionNum != INT_MAX && start == 0 && yy_i == input.length() - 1) {\n"
-        "                    actionToRun = min(actionToRun, yy_stateArr[stateNum].matchStartAndEndActionNum);\n"
+        "                if (matchStartAndEndActionNum[stateNum] != INT_MAX && start == 0 && yy_i == input.length() - 1) {\n"
+        "                    actionToRun = min(actionToRun, matchStartAndEndActionNum[stateNum]);\n"
         "                }\n"
 
-        "                actionToRun = min(actionToRun, yy_stateArr[stateNum].actionNum);\n"
+        "                actionToRun = min(actionToRun, actionNum[stateNum]);\n"
         "            }\n"
         "        }\n"
 

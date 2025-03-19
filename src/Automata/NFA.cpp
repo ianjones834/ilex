@@ -98,6 +98,52 @@ NFA* nfa_union(NFA* nfa1, NFA* nfa2, bool forRules) {
     return nfa;
 }
 
+NFA* nfa_nUnion(vector<NFA*> nfaArr, bool forRules) {
+    int size = 1;
+
+    for (NFA* nfa : nfaArr) {
+        size += nfa->stateNum;
+    }
+
+    NFA* res = new NFA(size);
+
+    int curIndex = 1;
+
+    for (NFA* nfa : nfaArr) {
+        res->transitions[0][0].insert(curIndex);
+
+        for (int i = 0; i < nfa->stateNum; i++) {
+            if (nfa->acceptStates[i]) {
+                res->acceptStates[i + curIndex] = true;
+            }
+
+            for (int j = 0; j < 128; j++) {
+                for (int k : nfa->transitions[i][j]) {
+                    res->transitions[i + curIndex][j].insert(k + curIndex);
+                }
+            }
+
+            if (forRules) {
+                res->actionNum[i + curIndex] = nfa->actionNum[i];
+
+                res->matchStart[i + curIndex] = nfa->matchStart[i];
+                res->matchEnd[i + curIndex] = nfa->matchEnd[i];
+                res->matchStartAndEnd[i + curIndex] = nfa->matchStartAndEnd[i];
+                res->notMatchStartAndNotMatchEnd[i + curIndex] = nfa->notMatchStartAndNotMatchEnd[i];
+
+                for (int k : nfa->backTo[i]) {
+                    res->backTo[i + curIndex].insert(k + curIndex);
+                }
+            }
+        }
+
+        curIndex += nfa->stateNum;
+        delete nfa;
+    }
+
+    return res;
+}
+
 NFA *nfa_concat(NFA *nfa1, NFA *nfa2, bool backTo) {
     NFA* nfa = new NFA(nfa1->stateNum + nfa2->stateNum);
 
@@ -183,40 +229,36 @@ NFA *nfa_optional(NFA *nfa) {
 }
 
 NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> charRangeSet) {
-    NFA* nfa = nullptr;
+    vector<NFA*> nfaArr;
 
     if (!charSet.empty()) {
-        nfa = nfa_new_single_char(*charSet.begin());
-
-        for (auto chPointer = ++charSet.begin(); chPointer != charSet.end(); chPointer++) {
-            nfa = nfa_union(nfa, nfa_new_single_char(*chPointer));
+        for (auto chPointer = charSet.begin(); chPointer != charSet.end(); chPointer++) {
+            nfaArr.push_back(nfa_new_single_char(*chPointer));
         }
 
         for (auto pair : charRangeSet) {
             char start = pair->first, end = pair->second;
 
             for (char ch = start; start <= ch && ch <= end; ch++) {
-                nfa = nfa_union(nfa, nfa_new_single_char(ch));
+                nfaArr.push_back(nfa_new_single_char(ch));
             }
 
             delete pair;
         }
     }
     else if (!charRangeSet.empty()) {
-        nfa = nfa_new_single_char((*charRangeSet.begin())->first++);
-
         for (auto pair : charRangeSet) {
             char start = pair->first, end = pair->second;
 
             for (char ch = start; start <= ch && ch <= end; ch++) {
-                nfa = nfa_union(nfa, nfa_new_single_char(ch));
+                nfaArr.push_back(nfa_new_single_char(ch));
             }
 
             delete pair;
         }
     }
 
-    return nfa;
+    return nfa_nUnion(nfaArr);
 }
 
 NFA *nfa_any() {

@@ -41,6 +41,8 @@ NFA* nfa_new_single_char(char);
 
 NFA* nfa_union(NFA*, NFA*, bool = false);
 
+NFA* nfa_nUnion(vector<NFA*>, bool = false);
+
 NFA* nfa_concat(NFA*, NFA*, bool = false);
 
 NFA* nfa_optional(NFA*);

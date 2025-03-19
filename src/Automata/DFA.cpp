@@ -7,6 +7,7 @@
 #include <climits>
 #include <map>
 #include <set>
+#include <unordered_map>
 #include <stack>
 #include <vector>
 
@@ -17,8 +18,8 @@ ostream& operator<<(ostream& os, const vector<bool>& booleanVector) {
 
     string res = booleanVector[0] ? "true" : "false" ;
 
-    for (bool boolean : booleanVector) {
-        res += ", " + string(boolean ? "true" : "false");
+    for (int i = 1; i < booleanVector.size(); i++) {
+        res += ", " + string(booleanVector[i] ? "true" : "false");
     }
 
     os << res;
@@ -33,8 +34,8 @@ ostream& operator<<(ostream& os, const vector<int>& intVector) {
 
     string res = to_string(intVector[0]);
 
-    for (int i : intVector) {
-        res += ", " + to_string(i);
+    for (int i = 1; i < intVector.size(); i++) {
+        res += ", " + to_string(intVector[i]);
     }
 
     os << res;
@@ -66,7 +67,7 @@ ostream& operator<<(ostream& os, const array<int, 128> intArray) {
     string res = to_string(intArray[0]);
 
     for (int i = 1; i < intArray.size(); i++) {
-        res += ", " + to_string(i);
+        res += ", " + to_string(intArray[i]);
     }
 
     os << res;
@@ -110,8 +111,10 @@ ostream& operator<<(ostream& os, const DFA& dfa) {
 
     os << "int curCharIndex[STATE_NUM] = { " << dfa.curCharIndex << " };" << endl << endl;
 
-    os << "int* backTo[STATE_NUM] = {\n" << dfa.backTo << "\n};" << endl << endl;
+    os << "unordered_set<int> backTo[STATE_NUM] = {\n" << dfa.backTo << "\n};" << endl << endl;
     os << "int transitions[STATE_NUM][128] = {\n" << dfa.transitions << "\n};" << endl << endl;
+
+    return os;
 }
 
 // DFA to NFA Convert
@@ -119,10 +122,13 @@ ostream& operator<<(ostream& os, const DFA& dfa) {
 DFA::DFA(NFA* nfa) {
     stateNum = 0;
 
+    unordered_map<int, set<int>> epsilonClosureState;
+
     map<set<int>, int> stateMap;
     stack<set<int>> nextStateSet;
 
     set<int> start = epsilon_closure(nfa, 0);
+    epsilonClosureState[0] = start;
     nextStateSet.push(start);
 
     stateMap[start] = stateNum++;
@@ -130,15 +136,14 @@ DFA::DFA(NFA* nfa) {
     acceptStates.push_back(false);
 
     actionNum.push_back(INT_MAX);
-    matchStartActionNum.push_back(INT_MAX);
     matchEndActionNum.push_back(INT_MAX);
+    matchStartActionNum.push_back(INT_MAX);
     matchStartAndEndActionNum.push_back(INT_MAX);
 
-    curCharIndex.push_back(-1);
+    curCharIndex.push_back(INT_MAX);
 
     backTo.push_back({});
     transitions.push_back({});
-    transitions[stateNum - 1].fill(-1);
 
     for (int state : start) {
         if (nfa->acceptStates[state]) {
@@ -154,7 +159,11 @@ DFA::DFA(NFA* nfa) {
 
     for (int state : start) {
         for (int back : nfa->backTo[state]) {
-            backTo[0].insert(stateMap[epsilon_closure(nfa, back)]);
+            if (!epsilonClosureState.contains(back)) {
+                epsilonClosureState[back] = epsilon_closure(nfa, back);
+            }
+
+            backTo[0].insert(stateMap[epsilonClosureState[back]]);
         }
     }
 
@@ -172,15 +181,15 @@ DFA::DFA(NFA* nfa) {
                 acceptStates.push_back(false);
 
                 actionNum.push_back(INT_MAX);
-                matchStartActionNum.push_back(INT_MAX);
                 matchEndActionNum.push_back(INT_MAX);
-                matchStartAndEndActionNum.push_back(INT_MIN);
+                matchStartActionNum.push_back(INT_MAX);
+                matchStartAndEndActionNum.push_back(INT_MAX);
 
-                curCharIndex.push_back(-1);
+                curCharIndex.push_back(INT_MAX);
 
                 backTo.push_back({});
                 transitions.push_back({});
-                transitions[stateNum - 1].fill(-1);
+
             }
 
             int curStateNum = stateMap[next];
@@ -199,7 +208,11 @@ DFA::DFA(NFA* nfa) {
 
             for (int state : next) {
                 for (int back : nfa->backTo[state]) {
-                    backTo[stateMap[next]].insert(stateMap[epsilon_closure(nfa, back)]);
+                    if (!epsilonClosureState.contains(back)) {
+                        epsilonClosureState[back] = epsilon_closure(nfa, back);
+                    }
+
+                    backTo[stateMap[next]].insert(stateMap[epsilonClosureState[back]]);
                 }
             }
 
