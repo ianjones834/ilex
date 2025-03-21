@@ -70,6 +70,13 @@ int definitionsScanner(istream& in, ofstream& out) {
     out << "#include<climits>" << endl;
     out << "using namespace std;" << endl;
 
+    out <<"int yy_match;";
+    out << "void yyless(int i) {\n\tyy_match -= i;\n}\n\n";
+    out << "void yymore(int i) {\n\tyy_match += i;\n}\n\n";
+    out << "int yyleng = 0;\n";
+    out << "string yytext = \"\";\n";
+    out << "#define ECHO printf(\"%s\", yytext.c_str())\n\n";
+
     while (getline(in, cur)) {
         if (cur == "%%") {
             return 0;
@@ -154,6 +161,10 @@ int rulesScanner(istream& in, ofstream& out) {
         while (i < cur.length()) {
             switch (char ch = cur[i]) {
                 case ' ': {
+                    i++;
+                    break;
+                }
+                case '\t': {
                     i++;
                     break;
                 }
@@ -253,19 +264,15 @@ int rulesScanner(istream& in, ofstream& out) {
                     }
                     break;
                 }
-                case '\\': {
-                    regex += '\\';
-
-                }
                 default: {
-                    if (i > 0 && cur[i - 1] == ' ') {
+                    if (i > 0 && cur[i - 1] == ' ' && !regex.empty()) {
                         string action;
 
                         while (i < cur.length()) {
                             action += cur[i++];
                         }
 
-                        if (!regex_search(action, std::regex("[;\n]?[\\s]*return.*;"))) {
+                        if (!regex_search(action, std::regex(";?[\\s]*return.*;"))) {
                             action += "\nreturn -1;\n";
                         }
 
@@ -332,7 +339,6 @@ int rulesScanner(istream& in, ofstream& out) {
     out << "};" << endl << endl;
 
     out << "int yy_i;\n"
-        "int yy_match;\n"
 
         "pair<int, int> yySimulate(string input, int startIndex = 0) {\n"
         "    yy_i = startIndex;\n"
@@ -354,6 +360,8 @@ int rulesScanner(istream& in, ofstream& out) {
 
         "            if (acceptStates[stateNum]) {\n"
         "                yy_match = yy_i;\n"
+        "                yyleng = yy_i - start + 1;\n "
+        "                yytext = input.substr(start, yyleng);\n"
 
         "                if (hasBackTo[stateNum]) {\n"
         "                    int backToIndex = INT_MIN;\n"
@@ -363,7 +371,8 @@ int rulesScanner(istream& in, ofstream& out) {
         "                            backToIndex = max(backToIndex, curCharIndex[j]);\n"
         "                        }\n"
         "                    }\n"
-
+        "                    yyleng = backToIndex - start + 1;\n"
+        "                    yytext = input.substr(start, yyleng);\n"
         "                    yy_match = backToIndex;\n"
         "                }\n"
 
@@ -408,6 +417,8 @@ int rulesScanner(istream& in, ofstream& out) {
 
         "    while (getline(cin, input)) {\n"
         "        fill(curCharIndex, curCharIndex + STATE_NUM, -1);\n"
+        "        input.append(\"\\n\");\n"
+
         "        auto res = yySimulate(input, start);\n"
 
         "        if (res.first < 0) {\n"
@@ -424,8 +435,32 @@ int rulesScanner(istream& in, ofstream& out) {
 
 int subroutinesScanner(istream& in, ofstream& out) {
     string cur;
+
+    bool main = false;
+    bool wrap = false;
+
     while (getline(in, cur)) {
+        if (cur == "main()") {
+            out << "int main()\n";
+            main = true;
+            continue;
+        }
+
+        if (cur == "yywrap()") {
+            out << "int yywrap()\n";
+            wrap = true;
+            continue;
+        }
+
         out << cur << endl;
+    }
+
+    if (!main) {
+        out << "int main() {\n\tyylex();\n}\n";
+    }
+
+    if (!wrap) {
+        out << "int yywrap() {\n\treturn 0;\n}\n";
     }
 
     return 0;

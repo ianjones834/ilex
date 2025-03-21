@@ -210,9 +210,9 @@ NFA *nfa_zero_or_more(const NFA *nfa1) {
 }
 
 NFA *nfa_one_or_more(NFA *nfa1) {
-    NFA* nfaCopy = new NFA(*nfa1);
+    NFA* nfa = new NFA(*nfa1);
 
-    return nfa_concat(nfaCopy, nfa_zero_or_more(nfa1));
+    return nfa_concat(nfa, nfa_zero_or_more(nfa1));
 }
 
 NFA *nfa_optional(NFA *nfa) {
@@ -229,18 +229,20 @@ NFA *nfa_optional(NFA *nfa) {
 }
 
 NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> charRangeSet) {
-    vector<NFA*> nfaArr;
+    NFA* nfa = new NFA(2);
+
+    nfa->acceptStates[1] = true;
 
     if (!charSet.empty()) {
         for (auto chPointer = charSet.begin(); chPointer != charSet.end(); chPointer++) {
-            nfaArr.push_back(nfa_new_single_char(*chPointer));
+            nfa->transitions[0][*chPointer].insert(1);
         }
 
         for (auto pair : charRangeSet) {
             char start = pair->first, end = pair->second;
 
             for (char ch = start; start <= ch && ch <= end; ch++) {
-                nfaArr.push_back(nfa_new_single_char(ch));
+                nfa->transitions[0][ch].insert(1);
             }
 
             delete pair;
@@ -251,14 +253,14 @@ NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> cha
             char start = pair->first, end = pair->second;
 
             for (char ch = start; start <= ch && ch <= end; ch++) {
-                nfaArr.push_back(nfa_new_single_char(ch));
+                nfa->transitions[0][ch].insert(1);
             }
 
             delete pair;
         }
     }
 
-    return nfa_nUnion(nfaArr);
+    return nfa;
 }
 
 NFA *nfa_any() {

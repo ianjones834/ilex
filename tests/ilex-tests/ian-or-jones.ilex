@@ -5,7 +5,11 @@
 
 %%
 
-int yywrap() { return 0;}
-int main() {
+yywrap()
+{
+return 0;
+}
+main()
+{
     yylex();
 }

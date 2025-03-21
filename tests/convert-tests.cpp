@@ -13,6 +13,7 @@ TEST(testName, []() -> bool { \
     NFA* nfa = regex_parse((x)); \
     for (int i = 0; i < nfa->stateNum; i++) if (nfa->acceptStates[i]) nfa->actionNum[i] = 0; \
     DFA* dfa = new DFA(nfa); \
+    auto stop = high_resolution_clock::now(); \
     delete nfa; \
     unordered_set<string> matches = simulate_dfa(dfa, (y)); \
     if (matches != (z)) cout << matches << endl; \

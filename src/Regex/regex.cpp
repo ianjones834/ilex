@@ -53,6 +53,15 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                     else {
                         matchEnd = true;
                     }
+
+                    NFA* nfa = nfa_optional(nfa_new_single_char('\n'));
+
+                    NFA* top = nfaStack.top();
+                    nfaStack.pop();
+
+                    nfaStack.push(nfa_concat(top, nfa));
+
+                    break;
                 }
             }
             case '(': {

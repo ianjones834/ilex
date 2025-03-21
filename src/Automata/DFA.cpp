@@ -124,6 +124,11 @@ ostream& operator<<(ostream& os, const DFA& dfa) {
     os << "bool backTo[STATE_NUM][STATE_NUM] = {\n";
 
     for (int i = 0; i < dfa.stateNum; i++) {
+        if (dfa.backTo[i].empty()) {
+            os << "{}," << endl;
+            continue;
+        }
+
         os << "{ " << (dfa.backTo[i].contains(0) ? "true" : "false");
 
         for (int j = 1; j < dfa.stateNum; j++) {
