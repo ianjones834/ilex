@@ -334,7 +334,7 @@ int rulesScanner(istream& in, ofstream& out) {
     out << "int yy_i;\n"
         "int yy_match;\n"
 
-        "pair<int, int> _yySimulate(string input, int startIndex = 0) {\n"
+        "pair<int, int> yySimulate(string input, int startIndex = 0) {\n"
         "    yy_i = startIndex;\n"
 
         "    for (int start = startIndex; start < input.length();) {\n"
@@ -355,11 +355,13 @@ int rulesScanner(istream& in, ofstream& out) {
         "            if (acceptStates[stateNum]) {\n"
         "                yy_match = yy_i;\n"
 
-        "                if (!backTo[stateNum].empty()) {\n"
+        "                if (hasBackTo[stateNum]) {\n"
         "                    int backToIndex = INT_MIN;\n"
 
-        "                    for (auto backTo : backTo[stateNum]) {\n"
-        "                        backToIndex = max(backToIndex, curCharIndex[backTo]);\n"
+        "                    for (int j = 0; j < STATE_NUM; j++) {\n"
+        "                        if (backTo[j]) {\n"
+        "                            backToIndex = max(backToIndex, curCharIndex[j]);\n"
+        "                        }\n"
         "                    }\n"
 
         "                    yy_match = backToIndex;\n"
@@ -405,7 +407,8 @@ int rulesScanner(istream& in, ofstream& out) {
         "    int start = 0;\n"
 
         "    while (getline(cin, input)) {\n"
-        "        auto res = _yySimulate(input, start);\n"
+        "        fill(curCharIndex, curCharIndex + STATE_NUM, -1);\n"
+        "        auto res = yySimulate(input, start);\n"
 
         "        if (res.first < 0) {\n"
         "            return -1;\n"

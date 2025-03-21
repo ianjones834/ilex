@@ -111,7 +111,28 @@ ostream& operator<<(ostream& os, const DFA& dfa) {
 
     os << "int curCharIndex[STATE_NUM] = { " << dfa.curCharIndex << " };" << endl << endl;
 
-    os << "unordered_set<int> backTo[STATE_NUM] = {\n" << dfa.backTo << "\n};" << endl << endl;
+    os << "bool hasBackTo[STATE_NUM] = {";
+
+    os << (dfa.backTo[0].empty() ? "false" : "true");
+
+    for (int i = 1; i < dfa.stateNum; i++) {
+        os << ", " << (dfa.backTo[i].empty() ? "false" : "true");
+    }
+
+    os << " };\n" << endl;
+
+    os << "bool backTo[STATE_NUM][STATE_NUM] = {\n";
+
+    for (int i = 0; i < dfa.stateNum; i++) {
+        os << "{ " << (dfa.backTo[i].contains(0) ? "true" : "false");
+
+        for (int j = 1; j < dfa.stateNum; j++) {
+            os << ", " << (dfa.backTo[i].contains(j) ? "true" : "false");
+        }
+
+        os << " },\n";
+    }
+    os << "\n};" << endl << endl;
     os << "int transitions[STATE_NUM][128] = {\n" << dfa.transitions << "\n};" << endl << endl;
 
     return os;
