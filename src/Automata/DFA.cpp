@@ -101,6 +101,10 @@ ostream& operator<<(ostream& os, const vector<unordered_set<int>> setVector) {
 
 
 ostream& operator<<(ostream& os, const DFA& dfa) {
+    for (auto pair : dfa.nameToState) {
+        os << "#define " << pair.first << " " << pair.second << endl;
+    }
+
     os << "#define STATE_NUM " << dfa.stateNum << endl << endl;
     os << "bool acceptStates[STATE_NUM] = { " << dfa.acceptStates << " };" << endl;
 
@@ -245,4 +249,62 @@ DFA::DFA(NFA* nfa) {
             transitions[stateMap[cur]][ch] = stateMap[next];
         }
     }
+}
+
+DFA::DFA(int num) {
+    stateNum = num;
+
+    acceptStates = vector<bool>(stateNum);
+
+    actionNum = vector<int>(stateNum);
+    matchStartActionNum = vector<int>(stateNum);
+    matchEndActionNum = vector<int>(stateNum);
+    matchStartAndEndActionNum = vector<int>(stateNum);
+
+    curCharIndex = vector<int>(stateNum);
+
+    backTo = vector<unordered_set<int>>(stateNum);
+    transitions = vector<array<int, 128>>(stateNum);
+}
+
+DFA *dfa_nUnion(vector<DFA *> dfaArr, unordered_map<int, string> dfaIndexToName) {
+    int size = 0;
+
+    for (DFA* dfa : dfaArr) {
+        size += dfa->stateNum;
+    }
+
+    DFA* res = new DFA(size);
+
+    int curIndex = 0;
+
+    for (int dfaPointer = 0; dfaPointer < dfaArr.size(); dfaPointer++) {
+        DFA* dfa = dfaArr[dfaPointer];
+
+        for (int i = 0; i < dfa->stateNum; i++) {
+            if (dfa->acceptStates[i]) {
+                res->acceptStates[i + curIndex] = true;
+            }
+
+            for (int j = 0; j < 128; j++) {
+                res->transitions[i + curIndex][j] = dfa->transitions[i][j] + curIndex;
+            }
+
+            res->actionNum[i + curIndex] = dfa->actionNum[i];
+            res->matchStartActionNum[i + curIndex] = dfa->matchStartActionNum[i];
+            res->matchEndActionNum[i + curIndex] = dfa->matchEndActionNum[i];
+            res->matchStartAndEndActionNum[i + curIndex] = dfa->matchStartAndEndActionNum[i];
+
+            for (int k : dfa->backTo[i]) {
+                res->backTo[i + curIndex].insert(k + curIndex);
+            }
+        }
+
+        dfa->nameToState[dfaIndexToName[dfaPointer]] = curIndex;
+
+        curIndex += dfa->stateNum;
+        delete dfa;
+    }
+
+    return res;
 }

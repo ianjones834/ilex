@@ -16,6 +16,7 @@ struct NFA {
     // NFAState* start;
     // unordered_set<NFAState*> states;
     int stateNum;
+    int dfaNum;
 
     vector<bool> acceptStates;
 

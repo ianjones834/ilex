@@ -65,17 +65,23 @@ int definitionsScanner(istream& in, ofstream& out) {
     string cur;
     out << "#include<iostream>" << endl;
     out << "#include<string>" << endl;
-    out << "#include<unordered_set>" << endl;
-    out << "#include<unordered_map>" << endl;
     out << "#include<climits>" << endl;
     out << "using namespace std;" << endl;
 
-    out <<"int yy_match;";
+    out << "#define YY_BUF_SIZE 1024\n";
+    out << "FILE* yyin = stdin;" << endl;
+    out << "FILE* yyout = stdout;" << endl;
+    out << "#define output(c) fputs(c, yyout)\n";
+    out << "int yy_dfaNum = 0;\n";
+    out << "#define BEGIN yy_dfaNum = " << endl;
+    out << "int yy_match;\n";
     out << "void yyless(int i) {\n\tyy_match -= i;\n}\n\n";
     out << "void yymore(int i) {\n\tyy_match += i;\n}\n\n";
     out << "int yyleng = 0;\n";
     out << "string yytext = \"\";\n";
-    out << "#define ECHO printf(\"%s\", yytext.c_str())\n\n";
+    out << "#define ECHO output(yytext.c_str())" << endl;
+    out << "char yybuf[YY_BUF_SIZE];\n";
+    out << "#define input() fgets(yybuf, YY_BUF_SIZE, yyin)" << endl;
 
     while (getline(in, cur)) {
         if (cur == "%%") {
@@ -141,6 +147,9 @@ int definitionsScanner(istream& in, ofstream& out) {
 int rulesScanner(istream& in, ofstream& out) {
     string cur = "";
     int curMachine = 0;
+    int dfaNum = 0;
+    unordered_map<string, int> dfaNameToNum;
+    unordered_map<int, string> dfaNumToName;
 
     stack<NFA*> nfaStack;
 
@@ -264,6 +273,25 @@ int rulesScanner(istream& in, ofstream& out) {
                     }
                     break;
                 }
+                case '<': {
+                    i++;
+                    string dfaName;
+
+                    while (cur[i] != '>') {
+                        dfaName += cur[i++];
+                    }
+
+                    if (dfaNameToNum.contains(dfaName)) {
+                        dfaNum = dfaNameToNum[dfaName];
+                    }
+                    else {
+                        dfaNameToNum[dfaName] = dfaNameToNum.size() + 1;
+                        dfaNumToName[dfaNumToName.size() + 1] = dfaName;
+                    }
+
+                    i++;
+                    break;
+                }
                 default: {
                     if (i > 0 && cur[i - 1] == ' ' && !regex.empty()) {
                         string action;
@@ -293,6 +321,7 @@ int rulesScanner(istream& in, ofstream& out) {
         }
 
         NFA* nfa = regex_parse(regex, curMachine);
+        nfa->dfaNum = dfaNum;
 
         for (int state = 0; state < nfa->stateNum; state++) {
             if (nfa->acceptStates[state]) {
@@ -305,28 +334,32 @@ int rulesScanner(istream& in, ofstream& out) {
     }
 
     NFA* nfaAnyCharacter = regex_parse(".", curMachine);
-
+    nfaAnyCharacter->dfaNum = 0;
     out << "int action" << curMachine++ << "() {return -1;}" << endl;
     nfaStack.push(nfaAnyCharacter);
 
-    vector<NFA*> nfaArr;
+    vector<vector<NFA*>> dfaNfaMatrix = vector<vector<NFA*>>(dfaNum + 1);
 
     if (nfaStack.empty()) {
         return 2;
     }
 
     while (!nfaStack.empty()) {
-        nfaArr.push_back(nfaStack.top());
+        dfaNfaMatrix[nfaStack.top()->dfaNum].push_back(nfaStack.top());
         nfaStack.pop();
     }
 
-    NFA* nfa = nfa_nUnion(nfaArr, true);
+    vector<DFA*> dfaArr;
 
-    DFA* dfa = new DFA(nfa);
+    for (int i = 0; i < dfaNfaMatrix.size(); i++) {
+        NFA* nfa = nfa_nUnion(dfaNfaMatrix[i], true);
+        dfaArr.push_back(new DFA(nfa));
+        delete nfa;
+    }
 
-    delete nfa;
+    DFA* dfa = dfa_nUnion(dfaArr, dfaNumToName);
 
-    out << *dfa << endl << endl;
+    out << *dfa << endl;
 
     out << "#define ACTION_NUM " << curMachine << endl << endl;
 
@@ -340,14 +373,13 @@ int rulesScanner(istream& in, ofstream& out) {
 
     out << "int yy_i;\n"
 
-        "pair<int, int> yySimulate(string input, int startIndex = 0) {\n"
-        "    yy_i = startIndex;\n"
-
-        "    for (int start = startIndex; start < input.length();) {\n"
-        "        int stateNum = 0;\n"
+        "pair<int, int> yySimulate(string input) {\n"
+        "    int start = yy_match;\n"
+        "    for (int start = yy_match; start < input.size();) {\n"
+        "        int stateNum = yy_dfaNum;\n"
         "        int actionToRun = INT_MAX;\n"
-
-        "        for (yy_i = start; yy_i < input.length(); yy_i++) {\n"
+        "        yy_i = start;"
+        "        for (yy_i = start; yy_i < input.size(); yy_i++) {\n"
         "            char ch = input[yy_i];\n"
 
         "            if (transitions[stateNum][ch] != -1) {\n"
@@ -412,14 +444,11 @@ int rulesScanner(istream& in, ofstream& out) {
         "int yywrap();\n"
 
         "int yylex() {\n"
-        "    string input;\n"
-        "    int start = 0;\n"
-
-        "    while (getline(cin, input)) {\n"
+        "    while (input() != nullptr) {\n"
+        "    yy_match = 0;\n"
         "        fill(curCharIndex, curCharIndex + STATE_NUM, -1);\n"
-        "        input.append(\"\\n\");\n"
 
-        "        auto res = yySimulate(input, start);\n"
+        "        auto res = yySimulate(yybuf);\n"
 
         "        if (res.first < 0) {\n"
         "            return -1;\n"
@@ -427,7 +456,7 @@ int rulesScanner(istream& in, ofstream& out) {
         "    }\n"
 
         "    return yywrap();\n"
-        "}\n";
+        "}" << endl;
 
     delete dfa;
     return 0;

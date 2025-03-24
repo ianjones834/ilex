@@ -7,6 +7,7 @@
 
 #include <unordered_set>
 #include <fstream>
+#include <unordered_map>
 
 #include "NFA.h"
 using namespace std;
@@ -14,6 +15,8 @@ using namespace std;
 struct DFA {
     // DFAState* start;
     // unordered_set<DFAState*> states;
+
+    unordered_map<string, int> nameToState;
 
     int stateNum;
 
@@ -30,8 +33,10 @@ struct DFA {
     vector<array<int, 128>> transitions;
 
     DFA(NFA*);
+    DFA(int);
 };
 
 ostream& operator<<(ostream&, const DFA&);
+DFA* dfa_nUnion(vector<DFA*>, unordered_map<int, string>);
 
 #endif //DFA_H
