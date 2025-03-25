@@ -39,6 +39,7 @@ return -1;
 
 }
 int action3() {return -1;}
+#define INITIAL 0
 #define STATE_NUM 6
 
 bool acceptStates[STATE_NUM] = { false, true, true, true, false, true };
@@ -148,20 +149,7 @@ int yywrap() {
     return 0;
 }
 
-int main(int argc, char* argv[]) {
-    if (argc > 1) {
-        FILE *file;
-
-        file = fopen(argv[1], "r");
-        if (!file) {
-            fprintf(stderr, "could not open %s\n", argv[1]);
-            exit(1);
-        }
-        yyin = file;
-    }
-
+int main() {
     yylex();
     printf("%d %d %d\n", lineCount, wordCount ,charCount);
-
-    return 0;
 }

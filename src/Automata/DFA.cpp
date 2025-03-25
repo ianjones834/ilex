@@ -300,7 +300,7 @@ DFA *dfa_nUnion(vector<DFA *> dfaArr, unordered_map<int, string> dfaIndexToName)
             }
         }
 
-        dfa->nameToState[dfaIndexToName[dfaPointer]] = curIndex;
+        res->nameToState[dfaIndexToName[dfaPointer]] = curIndex;
 
         curIndex += dfa->stateNum;
         delete dfa;

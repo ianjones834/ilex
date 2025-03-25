@@ -147,9 +147,10 @@ int definitionsScanner(istream& in, ofstream& out) {
 int rulesScanner(istream& in, ofstream& out) {
     string cur = "";
     int curMachine = 0;
+    unordered_map<string, int> dfaNameToNum = {{"INITIAL", 0}};
+    unordered_map<int, string> dfaNumToName = {{0, "INITIAL"}};
+
     int dfaNum = 0;
-    unordered_map<string, int> dfaNameToNum;
-    unordered_map<int, string> dfaNumToName;
 
     stack<NFA*> nfaStack;
 
@@ -163,6 +164,7 @@ int rulesScanner(istream& in, ofstream& out) {
         }
 
         string regex = "";
+        dfaNum = 0;
 
         int i = 0;
         bool regexNoAction = true;
