@@ -1,3 +1,12 @@
 %%
 .|\n ECHO;
 %%
+
+int yywrap() {
+    return 0;
+}
+
+int main () {
+    yylex();
+    return 0;
+}

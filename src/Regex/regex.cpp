@@ -17,6 +17,27 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
     bool newSubExpression = true;
 
     for (int i = 0; i < str.length(); i++) {
+        if (str[i] == '\\' && i + 1 < str.length()) {
+            char newChar = 0;
+
+            switch (str[i + 1]) {
+                case 'n' : {
+                    newChar = '\n';
+                    break;
+                }
+                case 't' : {
+                    newChar = '\t';
+                    break;
+                }
+            }
+
+            if (newChar != 0) {
+                str = str.substr(0, i) + newChar + str.substr(i + 2, str.length() - i - 2);
+            }
+        }
+    }
+
+    for (int i = 0; i < str.length(); i++) {
         switch (char ch = str[i]) {
             case '"': {
                 i++;
@@ -217,9 +238,6 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                     nfaStack.push(nfa_concat(nfa, nfa_new_single_char('/')));
                 }
                 break;
-            }
-            case '\\': {
-                ch = str[++i];
             }
             default: {
                 NFA* newNfa = nfa_new_single_char(ch);

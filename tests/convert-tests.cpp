@@ -83,6 +83,7 @@ int main() {
     CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealice", unordered_set<string>{"alice" COMMA "alicealice"})
     CONVERT_TEST_PASS("(alice|bob){1,3}", "alicealicealicealice", unordered_set<string>{"alice" COMMA "alicealice" COMMA "alicealicealice"})
     CONVERT_TEST_PASS("(alice|bob){1,3}", "bobalicebob", unordered_set<string>{"bob" COMMA "bobalice" COMMA "bobalicebob" COMMA "alicebob" COMMA "alice"})
+    CONVERT_TEST_PASS("[^ \\t\\n]+", "ian", unordered_set<string>{"i" COMMA "ia" COMMA "ian" COMMA "a" COMMA "an" COMMA "n"})
 
     START_TESTS()
 }

@@ -71,7 +71,7 @@ int definitionsScanner(istream& in, ofstream& out) {
     out << "#define YY_BUF_SIZE 1024\n";
     out << "FILE* yyin = stdin;" << endl;
     out << "FILE* yyout = stdout;" << endl;
-    out << "#define output(c) fputs(c, yyout)\n";
+    out << "#define output(c) fputs (c, yyout)\n";
     out << "int yy_dfaNum = 0;\n";
     out << "#define BEGIN yy_dfaNum = " << endl;
     out << "int yy_match;\n";
@@ -211,7 +211,7 @@ int rulesScanner(istream& in, ofstream& out) {
                         regex += cur[i++];
                     }
 
-                    i++;
+                    regex += cur[i++];
                     break;
                 }
                 case '{': {
@@ -465,31 +465,8 @@ int rulesScanner(istream& in, ofstream& out) {
 int subroutinesScanner(istream& in, ofstream& out) {
     string cur;
 
-    bool main = false;
-    bool wrap = false;
-
     while (getline(in, cur)) {
-        if (cur == "main()") {
-            out << "int main()\n";
-            main = true;
-            continue;
-        }
-
-        if (cur == "yywrap()") {
-            out << "int yywrap()\n";
-            wrap = true;
-            continue;
-        }
-
         out << cur << endl;
-    }
-
-    if (!main) {
-        out << "int main() {\n\tyylex();\n}\n";
-    }
-
-    if (!wrap) {
-        out << "int yywrap() {\n\treturn 0;\n}\n";
     }
 
     return 0;

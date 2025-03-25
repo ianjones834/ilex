@@ -5,7 +5,7 @@ using namespace std;
 #define YY_BUF_SIZE 1024
 FILE* yyin = stdin;
 FILE* yyout = stdout;
-#define output(c) fputs(c, yyout)
+#define output(c) fputs (c, yyout)
 int yy_dfaNum = 0;
 #define BEGIN yy_dfaNum = 
 int yy_match;
@@ -22,44 +22,37 @@ string yytext = "";
 #define ECHO output(yytext.c_str())
 char yybuf[YY_BUF_SIZE];
 #define input() fgets(yybuf, YY_BUF_SIZE, yyin)
-    int letterCount = 0;
-    int digitCount = 0;
-
-    void printStuff() {
-        printf("Letters: %d, Digits: %d\n", letterCount, digitCount);
-    }
+    unsigned charCount = 0, wordCount = 0, lineCount = 0;
 int action0() {
-
-    letterCount++;
-    printStuff();
-
+wordCount++; charCount += yyleng;
 return -1;
 
 }
 int action1() {
-
-    digitCount++;
-    printStuff();
-
+ charCount++; lineCount++;
 return -1;
 
 }
-// .
-int action2() {return -1;}
+int action2() {
+charCount++;
+return -1;
+
+}
 int action3() {return -1;}
-#define STATE_NUM 5
+#define STATE_NUM 6
 
-bool acceptStates[STATE_NUM] = { false, true, true, true, false };
-int actionNum[STATE_NUM] = { 2147483647, 2, 1, 0, 2147483647 };
-int matchStartActionNum[STATE_NUM] = { 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
-int matchEndActionNum[STATE_NUM] = { 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
-int matchStartAndEndActionNum[STATE_NUM] = { 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
+bool acceptStates[STATE_NUM] = { false, true, true, true, false, true };
+int actionNum[STATE_NUM] = { 2147483647, 0, 2, 1, 2147483647, 0 };
+int matchStartActionNum[STATE_NUM] = { 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
+int matchEndActionNum[STATE_NUM] = { 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
+int matchStartAndEndActionNum[STATE_NUM] = { 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647 };
 
-int curCharIndex[STATE_NUM] = { 0, 0, 0, 0, 0 };
+int curCharIndex[STATE_NUM] = { 0, 0, 0, 0, 0, 0 };
 
-bool hasBackTo[STATE_NUM] = {false, false, false, false, false };
+bool hasBackTo[STATE_NUM] = {false, false, false, false, false, false };
 
 bool backTo[STATE_NUM][STATE_NUM] = {
+{},
 {},
 {},
 {},
@@ -69,11 +62,12 @@ bool backTo[STATE_NUM][STATE_NUM] = {
 };
 
 int transitions[STATE_NUM][128] = {
-	{ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1 },
+	{ 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+	{ 0, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 },
 	{ 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
 	{ 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
 	{ 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
-	{ 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
+	{ 0, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 },
 
 };
 
@@ -150,14 +144,24 @@ int yylex() {
     return yywrap();
 }
 
-int yywrap()
-{
-    printf("Final Count:\n\tLetters: %d, Digits: %d\n", letterCount, digitCount);
+int yywrap() {
     return 0;
 }
 
-int main()
-{
-    yylex();
-}
+int main(int argc, char* argv[]) {
+    if (argc > 1) {
+        FILE *file;
 
+        file = fopen(argv[1], "r");
+        if (!file) {
+            fprintf(stderr, "could not open %s\n", argv[1]);
+            exit(1);
+        }
+        yyin = file;
+    }
+
+    yylex();
+    printf("%d %d %d\n", lineCount, wordCount ,charCount);
+
+    return 0;
+}

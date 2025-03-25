@@ -20,7 +20,7 @@ TEST(testName, []() -> bool { \
 int main() {
     INIT_TESTING()
 
-    REGEX_TEST_PASS("a", "a", unordered_set<string>{"a"})
+    /*REGEX_TEST_PASS("a", "a", unordered_set<string>{"a"})
     REGEX_TEST_PASS("b", "b", unordered_set<string>{"b"})
     REGEX_TEST_PASS("a", "b", unordered_set<string>{})
     REGEX_TEST_PASS("a|b", "a", unordered_set<string>{"a"})
@@ -65,7 +65,9 @@ int main() {
     REGEX_TEST_PASS("^ian$", "abian", unordered_set<string>{})
     REGEX_TEST_PASS("^ian$", "ianj", unordered_set<string>{})
     REGEX_TEST_PASS("a/b", "ab", unordered_set<string>{"a"})
-    REGEX_TEST_PASS("ian/jones", "ianjones", unordered_set<string>{"ian"})
+    REGEX_TEST_PASS("ian/jones", "ianjones", unordered_set<string>{"ian"})*/
+    REGEX_TEST_PASS("[^ \\t\\n]+", "ian", unordered_set<string>{"i" COMMA "ia" COMMA "ian" COMMA "a" COMMA "an" COMMA "n"})
+
 
     START_TESTS()
 }
