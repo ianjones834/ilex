@@ -340,6 +340,7 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 }
 
                 NFA* lhs = nfaStack.top();
+                nfaStack.pop();
 
                 nfaStack.push(nfa_union(lhs, rhs));
                 break;
