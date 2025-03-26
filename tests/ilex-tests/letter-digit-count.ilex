@@ -23,11 +23,7 @@
 
 %%
 
-int yywrap() {
-    printf("Final Count:\n\tLetters: %d, Digits: %d\n", letterCount, digitCount);
-    return 0;
-}
-
 int main() {
     yylex();
+    printf("Final Count:\n\tLetters: %d, Digits: %d\n", letterCount, digitCount);
 }

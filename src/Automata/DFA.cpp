@@ -11,6 +11,17 @@
 #include <stack>
 #include <vector>
 
+bool isRejectState(int stateNum, array<int, 128> transitions) {
+    for (int state : transitions) {
+        if (state != stateNum) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 ostream& operator<<(ostream& os, const vector<bool>& booleanVector) {
     if (booleanVector.empty()) {
         return os;
@@ -144,8 +155,21 @@ ostream& operator<<(ostream& os, const DFA& dfa) {
     os << "\n};" << endl << endl;
     os << "int transitions[STATE_NUM][128] = {\n" << dfa.transitions << "\n};" << endl << endl;
 
+    os << "bool endState[STATE_NUM] = { ";
+
+    os << (isRejectState(0, dfa.transitions[0]) ? "true" : "false");
+
+    for (int i = 1; i < dfa.stateNum; i++) {
+        os << ", " << (isRejectState(i, dfa.transitions[i]) ? "true" : "false");
+    }
+
+    os << " };" << endl;
+
+
+
     return os;
 }
+
 
 // DFA to NFA Convert
 
@@ -248,6 +272,10 @@ DFA::DFA(NFA* nfa) {
 
             transitions[stateMap[cur]][ch] = stateMap[next];
         }
+    }
+
+    for (int i = 0; i < stateNum; i++) {
+        transitions[i][0] = i;
     }
 }
 

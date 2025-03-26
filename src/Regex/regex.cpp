@@ -43,8 +43,9 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 i++;
 
                 while (i < str.length() && str[i] != '"') {
-                    if (nfaStack.empty()) {
+                    if (newSubExpression) {
                         nfaStack.push(nfa_new_single_char(str[i]));
+                        newSubExpression = false;
                     }
                     else {
                         NFA* nfa = nfaStack.top();
@@ -54,7 +55,6 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
 
                     i++;
                 }
-                i++;
 
                 break;
             }
@@ -181,13 +181,14 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                         j++;
                     }
 
-                    if (!nfaStack.empty()) {
+                    if (!newSubExpression) {
                         NFA* newNfa = nfa_concat(nfaStack.top(), nfa_range(charSet, rangeSet));
                         nfaStack.pop();
                         nfaStack.push(newNfa);
                     }
                     else {
                         nfaStack.push(nfa_range(charSet, rangeSet));
+                        newSubExpression = false;
                     }
 
                     i = j;

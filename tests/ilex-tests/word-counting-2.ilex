@@ -1,5 +1,5 @@
 %{
-    unsigned charCount = 0, wordCount = 0, lineCount = 0;
+    int charCount = 0, wordCount = 0, lineCount = 0;
 %}
 
 word [^ \t\n]+
@@ -12,10 +12,6 @@ eol \n
 . charCount++;
 
 %%
-
-int yywrap() {
-    return 0;
-}
 
 int main(int argc, char* argv[]) {
     if (argc > 1) {
