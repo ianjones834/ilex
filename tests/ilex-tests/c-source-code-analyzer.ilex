@@ -27,5 +27,5 @@
 
 int main() {
     yylex();
-    printf("code: %d, comments: %d, whitespace: %d", code, comments, whiteSpace);
+    printf("code: %d, comments: %d, whitespace: %d\n", code, comments, whiteSpace);
 }

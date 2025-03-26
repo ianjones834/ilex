@@ -13,8 +13,9 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
     stack<NFA*> nfaStack;
     stack<char> opStack;
     bool matchStart = false, matchEnd = false, matchStartAndEnd = false;
-
-    bool newSubExpression = true;
+    bool nfaBackTo = false;
+    bool concat = false;
+    NFA* secondaryNfa;
 
     for (int i = 0; i < str.length(); i++) {
         if (str[i] == '\\' && i + 1 < str.length()) {
@@ -43,15 +44,14 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 i++;
 
                 while (i < str.length() && str[i] != '"') {
-                    if (newSubExpression) {
-                        nfaStack.push(nfa_new_single_char(str[i]));
-                        newSubExpression = false;
+                    if (concat) {
+                        opStack.push('*');
                     }
                     else {
-                        NFA* nfa = nfaStack.top();
-                        nfaStack.pop();
-                        nfaStack.push(nfa_concat(nfa, nfa_new_single_char(str[i])));
+                        concat = true;
                     }
+
+                    nfaStack.push(nfa_new_single_char(str[i]));
 
                     i++;
                 }
@@ -86,8 +86,14 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 }
             }
             case '(': {
+                if (concat) {
+                    opStack.push('*');
+                    concat = false;
+                }
+
                 opStack.push(ch);
-                newSubExpression = true;
+
+
                 break;
             }
             case ')': {
@@ -95,9 +101,29 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
 
                 while (op != '(') {
                     switch (op) {
-                        case '|' : {
+                        case '*': {
+                            opStack.pop();
                             NFA* rhs = nfaStack.top();
                             nfaStack.pop();
+                            NFA* lhs = nfaStack.top();
+                            nfaStack.pop();
+                            nfaStack.push(nfa_concat(lhs, rhs));
+                            break;
+                        }
+                        case '|' : {
+                            opStack.pop();
+                            NFA* rhs = nfaStack.top();
+                            nfaStack.pop();
+
+                            while (!opStack.empty() && opStack.top() == '*') {
+                                NFA* rhs2 = nfaStack.top();
+                                nfaStack.pop();
+                                NFA* lhs = nfaStack.top();
+                                nfaStack.pop();
+                                nfaStack.push(nfa_concat(lhs, rhs2));
+                                opStack.pop();
+                            }
+
                             NFA* lhs = nfaStack.top();
                             nfaStack.pop();
 
@@ -107,7 +133,6 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                         default:;
                     }
 
-                    opStack.pop();
                     op = opStack.top();
                 }
 
@@ -116,7 +141,7 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
             }
             case '|': {
                 opStack.push(ch);
-                newSubExpression = true;
+                concat = false;
                 break;
             }
             case '*': {
@@ -160,6 +185,13 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                         j++;
                     }
 
+                    if (concat) {
+                        opStack.push('*');
+                    }
+                    else {
+                        concat = true;
+                    }
+
                     NFA* newNfa = nfa_notInRange(charsToAvoid);
                     nfaStack.push(newNfa);
                     i = j;
@@ -181,15 +213,14 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                         j++;
                     }
 
-                    if (!newSubExpression) {
-                        NFA* newNfa = nfa_concat(nfaStack.top(), nfa_range(charSet, rangeSet));
-                        nfaStack.pop();
-                        nfaStack.push(newNfa);
+                    if (concat) {
+                        opStack.push('*');
                     }
                     else {
-                        nfaStack.push(nfa_range(charSet, rangeSet));
-                        newSubExpression = false;
+                        concat = true;
                     }
+
+                    nfaStack.push(nfa_range(charSet, rangeSet));
 
                     i = j;
                 }
@@ -197,6 +228,14 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 break;
             }
             case '.': {
+                if (concat) {
+                    opStack.push('*');
+                }
+                else {
+                    concat = true;
+                }
+
+
                 NFA* newNfa = nfa_any();
                 nfaStack.push(newNfa);
                 break;
@@ -225,13 +264,12 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                 break;
             }
             case '/': {
-                if (isPrimaryNfa) {
-                    NFA* secondaryNfa = regex_parse(str.substr(i + 1, str.length() - i - 1), false);
-                    NFA* nfa = nfaStack.top();
-                    nfaStack.pop();
+                if (isPrimaryNfa && !nfaBackTo) {
+                    secondaryNfa = regex_parse(str.substr(i + 1, str.length() - i - 1), false);
+
+                    nfaBackTo = true;
 
                     i = str.length();
-                    nfaStack.push(nfa_concat(nfa, secondaryNfa, true));
                 }
                 else {
                     NFA* nfa = nfaStack.top();
@@ -264,12 +302,11 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                     }
                 }
 
-                if (!newSubExpression) {
-                    newNfa = nfa_concat(nfaStack.top(), newNfa);
-                    nfaStack.pop();
+                if (concat) {
+                    opStack.push('*');
                 }
                 else {
-                    newSubExpression = false;
+                    concat = true;
                 }
 
                 nfaStack.push(newNfa);
@@ -279,28 +316,44 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
 
     while (opStack.size() > 0) {
         switch (opStack.top()) {
-            case '|': {
+            case '*': {
                 NFA* rhs = nfaStack.top();
                 nfaStack.pop();
-                NFA *lhs = nfaStack.top();
+                NFA* lhs = nfaStack.top();
                 nfaStack.pop();
-                nfaStack.push(nfa_union(lhs, rhs));
+                nfaStack.push(nfa_concat(lhs, rhs));
+                opStack.pop();
+                break;
             }
+            case '|' : {
+                opStack.pop();
+                NFA* rhs = nfaStack.top();
+                nfaStack.pop();
+
+                while (!opStack.empty() && opStack.top() == '*') {
+                    opStack.pop();
+                    NFA* rhs2 = nfaStack.top();
+                    nfaStack.pop();
+                    NFA* lhs = nfaStack.top();
+                    nfaStack.pop();
+                    nfaStack.push(nfa_concat(lhs, rhs2));
+                }
+
+                NFA* lhs = nfaStack.top();
+
+                nfaStack.push(nfa_union(lhs, rhs));
+                break;
+            }
+            default:;
         }
-
-        opStack.pop();
-    }
-
-    while (nfaStack.size() > 1) {
-        NFA* rhs = nfaStack.top();
-        nfaStack.pop();
-        NFA *lhs = nfaStack.top();
-        nfaStack.pop();
-
-        nfaStack.push(nfa_concat(lhs, rhs));
     }
 
     NFA* nfa = nfaStack.top();
+    nfaStack.pop();
+
+    if (nfaBackTo) {
+        nfa = nfa_concat(nfa, secondaryNfa, true);
+    }
 
     for (int i = 0; i < nfa->stateNum; i++) {
         if (nfa->acceptStates[i]) {
@@ -311,5 +364,6 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
         }
     }
 
-    return nfaStack.top();
+    return nfa;
 }
+

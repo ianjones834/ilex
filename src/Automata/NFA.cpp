@@ -264,7 +264,7 @@ NFA *nfa_range(unordered_set<char> charSet, unordered_set<pair<char, char>*> cha
 }
 
 NFA *nfa_any() {
-    return nfa_range({}, {new pair<char, char>{1, 127}});
+    return nfa_notInRange({'\n'});
 }
 
 NFA *nfa_notInRange(unordered_set<char> notAccepted) {

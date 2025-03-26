@@ -401,6 +401,7 @@ int rulesScanner(istream& in, ofstream& out) {
     out << "};" << endl << endl;
 
     out << "int yy_i;" << endl;
+    out << "char yy_prevMatchChar = '\\n';" << endl;
 
         out << "int yylex() {\n"
 "    yylex_start:\n"
@@ -435,13 +436,14 @@ int rulesScanner(istream& in, ofstream& out) {
 "                yyleng = backToIndex - start + 1;\n"
 "                yy_match = backToIndex;\n"
 "            }\n"
-"            if (matchStartActionNum[stateNum] != INT_MAX && start == 0) {\n"
+"            actionToRun = INT_MAX;\n"
+"            if (matchStartActionNum[stateNum] != INT_MAX && yy_prevMatchChar == '\\n') {\n"
 "                actionToRun = min(actionToRun, matchStartActionNum[stateNum]);\n"
 "            }\n"
 "            if (matchEndActionNum[stateNum] != INT_MAX) {\n"
 "                actionToRun = min(actionToRun, matchEndActionNum[stateNum]);\n"
 "            }\n"
-"            if (matchStartAndEndActionNum[stateNum] != INT_MAX && start == 0) {\n"
+"            if (matchStartAndEndActionNum[stateNum] != INT_MAX && yy_prevMatchChar == '\\n') {\n"
 "                actionToRun = min(actionToRun, matchStartAndEndActionNum[stateNum]);\n"
 "            }\n"
 "            actionToRun = min(actionToRun, actionNum[stateNum]);\n"
@@ -454,6 +456,7 @@ int rulesScanner(istream& in, ofstream& out) {
 "            }\n"
 
 "            int res = actionArr[actionToRun]();\n"
+"            yy_prevMatchChar = yytext[yytext.length() -1];\n"
 "            yy_match++;\n"
 "            goto yylex_start;\n"
 "        }\n"
