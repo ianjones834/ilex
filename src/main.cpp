@@ -248,12 +248,16 @@ int rulesScanner(istream& in, ofstream& out) {
                         int leftParenthesisCount = 1;
                         i++;
                         while (true) {
+                            if (cur[i] == '{') {
+                                leftParenthesisCount++;
+                            }
+
                             if (cur[i] == '}') {
                                 leftParenthesisCount--;
-                                i++;
                             }
 
                             if (!leftParenthesisCount) {
+                                i++;
                                 break;
                             }
 
