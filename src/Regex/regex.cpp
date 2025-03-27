@@ -18,6 +18,7 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
     NFA* secondaryNfa;
 
     for (int i = 0; i < str.length(); i++) {
+
         if (str[i] == '\\' && i + 1 < str.length()) {
             char newChar = 0;
 
@@ -277,6 +278,12 @@ NFA* regex_parse(string str, bool isPrimaryNfa) {
                     nfaStack.push(nfa_concat(nfa, nfa_new_single_char('/')));
                 }
                 break;
+            }
+            case '\\': {
+                if (i + 1 < str.length()) {
+                    ch = str[i + 1];
+                    i++;
+                }
             }
             default: {
                 NFA* newNfa = nfa_new_single_char(ch);
