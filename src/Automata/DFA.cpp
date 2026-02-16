@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <stack>
 #include <vector>
+#include <sstream>
 
 bool isRejectState(int stateNum, array<int, 128> transitions) {
     for (int state : transitions) {
